@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import random
 import tomllib
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -49,7 +49,8 @@ def crear_estudio(s: Session, cfg: dict[str, Any]) -> Estudio:
     estudio = Estudio(
         nombre=e["nombre"],
         zona_horaria=e.get("zona_horaria", "Europe/Madrid"),
-        config={"estudio": e, "politicas": cfg.get("politicas", {})},
+        config={"estudio": e, "politicas": cfg.get("politicas", {}),
+                "horario": cfg.get("horario", [])},
     )
     s.add(estudio)
     s.flush()
@@ -91,14 +92,14 @@ def crear_estudio(s: Session, cfg: dict[str, Any]) -> Estudio:
     return estudio
 
 
-def generar_clases(
-    s: Session, estudio: Estudio, cfg: dict[str, Any], desde: date, semanas: int = 2
-) -> int:
+def generar_clases(s: Session, estudio: Estudio, cfg: dict[str, Any],
+                   desde: date, semanas: int = 2) -> int:
+    """Crea las clases del horario semanal que falten entre `desde` y `desde + semanas`."""
     tz = ZoneInfo(estudio.zona_horaria)
-    tipos = {
-        t.clave: t for t in s.scalars(select(TipoClase).where(TipoClase.estudio_id == estudio.id))
-    }
-    staff = {p.nombre: p for p in s.scalars(select(Staff).where(Staff.estudio_id == estudio.id))}
+    tipos = {t.clave: t for t in s.scalars(
+        select(TipoClase).where(TipoClase.estudio_id == estudio.id))}
+    staff = {p.nombre: p for p in s.scalars(
+        select(Staff).where(Staff.estudio_id == estudio.id))}
     n = 0
     for d in range(semanas * 7):
         dia = desde + timedelta(days=d)
@@ -107,19 +108,28 @@ def generar_clases(
                 continue
             tipo = tipos[h["tipo"]]
             hh, mm = map(int, h["hora"].split(":"))
-            inicio = datetime.combine(dia, time(hh, mm), tzinfo=tz)
-            s.add(
-                Clase(
-                    estudio_id=estudio.id,
-                    tipo_id=tipo.id,
-                    instructor_id=staff[h["instructor"]].id,
-                    inicio=inicio,
-                    fin=inicio + timedelta(minutes=tipo.duracion_min),
-                    aforo=tipo.aforo,
-                )
-            )
+            inicio = datetime.combine(dia, time(hh, mm), tzinfo=tz).astimezone(UTC)
+            existe = s.scalar(select(Clase.id).where(
+                Clase.estudio_id == estudio.id, Clase.tipo_id == tipo.id, Clase.inicio == inicio))
+            if existe:
+                continue
+            s.add(Clase(estudio_id=estudio.id, tipo_id=tipo.id,
+                        instructor_id=staff[h["instructor"]].id, inicio=inicio,
+                        fin=inicio + timedelta(minutes=tipo.duracion_min), aforo=tipo.aforo))
             n += 1
+    s.flush()
     return n
+
+
+def extender_horario(s: Session, estudio_id: int, hoy: date, semanas: int = 2) -> int:
+    """Cron diario: mantiene siempre `semanas` de clases publicadas por delante.
+    Las clases canceladas no se vuelven a crear (siguen existiendo con estado cancelada).
+    Ojo: si el admin mueve una clase del horario fijo, el hueco original se rellenará;
+    para cambios permanentes hay que editar el horario en el TOML."""
+    estudio = s.get(Estudio, estudio_id)
+    if estudio is None:
+        return 0
+    return generar_clases(s, estudio, estudio.config, hoy, semanas)
 
 
 NOMBRES = [

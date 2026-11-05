@@ -82,6 +82,7 @@ class EstadoBono(enum.StrEnum):
     CONGELADO = "congelado"
     CADUCADO = "caducado"
     AGOTADO = "agotado"
+    ANULADO = "anulado"
 
 
 class EstadoPago(enum.StrEnum):
@@ -318,6 +319,7 @@ class Conversacion(Base):
     cliente_id: Mapped[int | None] = mapped_column(ForeignKey("clientes.id"))
     estado: Mapped[EstadoConversacion] = mapped_column(String(20), default=EstadoConversacion.BOT)
     ultima_entrada_en: Mapped[datetime | None]
+    humano_hasta: Mapped[datetime | None]
 
 
 class Mensaje(Base):
@@ -364,4 +366,27 @@ class EventoAgente(Base):
     tokens_in: Mapped[int | None] = mapped_column(Integer)
     tokens_out: Mapped[int | None] = mapped_column(Integer)
     latencia_ms: Mapped[int | None] = mapped_column(Integer)
+    creado_en: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class NotaInterna(Base):
+    """Notas del staff sobre un cliente; el cliente nunca las ve (RF-CLI-006)."""
+
+    __tablename__ = "notas_internas"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    estudio_id: Mapped[int] = mapped_column(ForeignKey("estudio.id"), index=True)
+    cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id"), index=True)
+    staff_id: Mapped[int | None] = mapped_column(ForeignKey("staff.id"))
+    texto: Mapped[str] = mapped_column(Text)
+    creado_en: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class EnvioProgramado(Base):
+    """Registro de envíos del cron para no repetirlos (idempotencia)."""
+
+    __tablename__ = "envios_programados"
+    __table_args__ = (UniqueConstraint("estudio_id", "clave"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    estudio_id: Mapped[int] = mapped_column(ForeignKey("estudio.id"), index=True)
+    clave: Mapped[str] = mapped_column(String(200))
     creado_en: Mapped[datetime] = mapped_column(server_default=func.now())

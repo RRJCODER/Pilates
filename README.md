@@ -1,28 +1,41 @@
 # Pilates: agente de IA para estudios de pilates
 
-Un asistente por WhatsApp que gestiona reservas, clientes y bonos, cobros y marketing de un estudio de pilates. Lo forman un **orquestador** con **subagentes** especialistas y **memoria** por cliente.
+Un asistente por **WhatsApp** que gestiona un estudio de pilates. Un **orquestador** entiende cada mensaje y lo delega en cuatro **subagentes** especialistas (Reservas, Clientes y bonos, Cobros, Marketing), con **memoria** por cliente. Está hecho en Python con FastAPI, el SDK oficial `anthropic` (Tool Runner), PostgreSQL y Redis/arq.
+
+Es un producto **genérico**: cada estudio se configura en `config/estudio.toml` y elige sus proveedores (pagos, facturación, canal) con variables de entorno.
 
 El proyecto sigue **Spec-Driven Development**: todo empieza en [`specs/`](specs/).
 
 | Documento | Contenido |
 |---|---|
 | [00 · Constitución](specs/00-constitucion.md) | Reglas que no se negocian (SDD, privacidad, seguridad) |
-| [01 · Requisitos](specs/01-requisitos.md) | Qué hace el sistema, con IDs y preguntas abiertas |
+| [01 · Requisitos](specs/01-requisitos.md) | Qué hace el sistema, con IDs |
 | [02 · Diseño](specs/02-diseno.md) | Arquitectura, agentes, herramientas, memoria y datos |
 | [03 · Escenarios](specs/03-escenarios.md) | Criterios de aceptación y evals |
-| [04 · Plan de tareas](specs/04-plan-tareas.md) | Fases de implementación |
-
-Producto **genérico**: cada estudio se configura en `config/estudio.toml` y elige sus proveedores (pagos, facturación, canal) con variables de entorno.
-
-Estado: **fase 0 completada** (esqueleto, configuración, base de datos y estudio de ejemplo). Siguiente: fase 1, servicios de negocio.
+| [04 · Plan de tareas](specs/04-plan-tareas.md) | Estado de cada tarea |
+| [Puesta en marcha](docs/puesta-en-marcha.md) | WhatsApp, Stripe, despliegue y piloto |
 
 ## Arranque rápido
 
 ```bash
-cp .env.example .env
+cp .env.example .env                       # pon tu ANTHROPIC_API_KEY
 docker compose up -d db redis
 uv venv && . .venv/bin/activate && uv pip install -e ".[dev]"
 alembic upgrade head
 python -m app.db.seed --demo-clientes 30
-pytest
+python -m app.chat --como +34600000001     # hablar con el agente como admin
 ```
+
+## Tests
+
+```bash
+pytest                                      # unitarios + agentes con Claude simulado
+TEST_DATABASE_URL=postgresql+psycopg://pilates:pilates@localhost:5432/pilates_test pytest  # + concurrencia
+ANTHROPIC_API_KEY=... pytest tests/evals -s # evals con Claude real (cuestan dinero)
+```
+
+## Estado
+
+Las fases 0 a 4 están implementadas y probadas: servicios, agentes, memoria, WhatsApp, pagos y cron. Falta:
+- **T3.3**: lanzar los evals con una API key real para medir la latencia y el coste.
+- **Fase 5**: dar de alta en Meta, desplegar y hacer el piloto con un estudio real (guía en `docs/`).

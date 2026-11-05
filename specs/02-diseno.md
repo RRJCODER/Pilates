@@ -33,7 +33,7 @@
      └───────────────┴──── servicios/ (lógica de negocio) ───┘
                               │
                      PostgreSQL (Supabase) · Stripe · Holded
- Cron (APScheduler): recordatorios, lista de espera, impagos, informes → subagentes
+ Cron (arq): recordatorios, lista de espera, impagos, informes → subagentes
 ```
 
 ## 2. Stack
@@ -51,7 +51,7 @@
 | Transcripción | `STTAdapter`: `fake` · por decidir | Notas de voz |
 
 **Adaptadores (RF-GEN-002).** Viven en `app/integraciones/<tipo>/` y siguen un `Protocol` común. Cada estudio elige su implementación con variables de entorno (`PAGOS_PROVEEDOR=stripe`…). Las implementaciones `fake` permiten desarrollar y lanzar los evals sin cuentas externas.
-| Programador | APScheduler (en el worker) | Recordatorios e informes |
+| Programador | `arq` cron (en el worker) | Recordatorios e informes, sin otra dependencia |
 | Despliegue | Docker en Railway/Render/Fly | Barato, con HTTPS para el webhook |
 
 ### Por qué el Tool Runner del SDK `anthropic` y no el Claude Agent SDK
@@ -70,7 +70,8 @@ Todo se configura en `config/settings.py` mediante variables de entorno.
 - `thinking`: se omite. En Opus 5.5 es adaptativo y no se puede desactivar; la profundidad se controla con `effort`.
 - **Fallback ante rechazos**: `fallbacks="default"` con la beta `server-side-fallback-2026-07-01`, y se comprueba siempre `stop_reason == "refusal"`.
 - **Prompt caching**: las herramientas y el *system prompt* son estables (incluida la memoria global del estudio) y llevan `cache_control`. Lo variable (fecha y hora, ficha del cliente) va **después** del punto de caché.
-- `tool_choice`: siempre `auto`. En Opus 5.5 no se puede forzar `any` ni `tool`; las herramientas llevan `strict: true`.
+- `tool_choice`: siempre `auto`. En Opus 5.5 no se puede forzar `any` ni `tool`. Los esquemas de las herramientas se generan desde la firma de cada función (`@beta_tool`) con `additionalProperties: false`, y el servicio valida otra vez los datos.
+- **Message threads**: el Tool Runner del SDK continúa cada bucle con *message threads* (solo envía los mensajes nuevos). Esta función no es apta para ZDR; si un estudio exigiera ZDR, habría que desactivarla.
 - Si al medir costes en la fase de evals resulta caro, se prueba a cambiar los subagentes a `claude-sonnet-5-5` o `claude-haiku-5-5` (decisión del cliente, con datos).
 
 ## 4. Orquestador
@@ -91,23 +92,26 @@ Todo se configura en `config/settings.py` mediante variables de entorno.
 | `delegar_cobros(tarea: str)` | Ídem con Cobros |
 | `delegar_marketing(tarea: str)` | Ídem con Marketing (solo para el staff, salvo "BAJA" y consultas de consentimiento) |
 | `derivar_a_humano(motivo, urgencia)` | Avisa al admin por WhatsApp y marca la conversación como "en manos humanas" |
-| `confirmar_accion(codigo)` | Ejecuta una acción pendiente (ver §7) |
-| `memory` (`memory_20250818`) | Lee y escribe la memoria a largo plazo (ver §6) |
+| `confirmar_accion(codigo)` / `rechazar_accion(codigo)` | Ejecuta o descarta una acción pendiente (ver §7) |
+| `reactivar_asistente(telefono)` (solo admin) | Devuelve el control al bot en una conversación derivada |
+| `memory` (`memory_20250818`) | Escribe y consulta la memoria a largo plazo (ver §6) |
 
 **El código, no el modelo, inyecta el contexto del remitente.** `delegar_*` recibe solo `tarea`. El `cliente_id` y el `rol` se pasan al subagente desde el contexto del turno. Así el modelo no puede actuar en nombre de otra persona (RNF-SEG-002).
 
 ### 4.3 Salida del subagente
 
-Cada subagente termina con una salida estructurada (`output_config.format`):
+Cada subagente termina con un **resumen en texto** (qué hizo, el resultado y los ids). Es el **código**, no el modelo, quien añade las acciones pendientes que se crearon durante su ejecución:
 
 ```json
-{ "resultado": "ok | requiere_confirmacion | error | sin_permiso",
-  "resumen": "Reservada clase Reformer jueves 19:00 con Laura. Quedan 5 sesiones.",
-  "datos": { ... },
-  "accion_pendiente": { "codigo": "A7K2", "descripcion": "..." } | null }
+{ "resumen": "Reservada clase Reformer jueves 19:00 con Laura (reserva_id 81). Quedan 5 sesiones.",
+  "acciones_pendientes": [ { "codigo": "A7K2", "descripcion": "...", "expira_en_minutos": 15 } ] }
 ```
 
-El orquestador redacta el mensaje final para WhatsApp a partir de esta salida.
+Así el código de confirmación no depende de que el modelo lo copie bien. El orquestador redacta el mensaje final para WhatsApp a partir de esta salida.
+
+### 4.4 Herramientas visibles según el rol
+
+A cada subagente solo se le ofrecen las herramientas del rol de quien escribe: `alta_cliente` a los contactos nuevos, las de staff a instructores y admin, y las de admin solo al admin. Es defensa en profundidad, porque el servicio vuelve a comprobar el rol con `@requiere_rol`.
 
 ## 5. Subagentes y herramientas
 
@@ -122,6 +126,8 @@ En cada herramienta, el **rol mínimo** se comprueba en el código con el decora
 | `reservar_recurrente(dia_semana, hora, tipo, semanas)` | cliente | RF-RES-006 |
 | `cancelar_reserva(reserva_id)` | cliente | RF-RES-005 |
 | `unirse_lista_espera(clase_id)` | cliente | RF-RES-003 |
+| `aceptar_plaza_lista_espera(clase_id)` | cliente | RF-RES-004 |
+| `clases_del_instructor(desde, hasta)` | instructor | RF-RES-008 |
 | `mis_reservas()` | cliente | RF-RES-001 |
 | `asistentes_clase(clase_id)` | instructor | RF-RES-008 |
 | `marcar_asistencia(reserva_id, estado)` | instructor | RF-RES-008 |
@@ -133,12 +139,13 @@ En cada herramienta, el **rol mínimo** se comprueba en el código con el decora
 | Herramienta | Rol | Requisito |
 |---|---|---|
 | `alta_cliente(nombre, email, nivel, objetivos, consentimientos)` | lead | RF-CLI-001 |
-| `estado_bono()` | cliente | RF-CLI-002 |
+| `estado_bono()` / `mi_ficha()` | cliente | RF-CLI-002 |
+| `actualizar_consentimientos(salud?, marketing?)` | cliente | Constitución §3 |
 | `catalogo_bonos()` | lead | RF-CLI-003 |
-| `registrar_lesion(descripcion)` (requiere consentimiento de salud) | cliente | RF-CLI-004 |
+| `registrar_lesion(descripcion)` (requiere consentimiento de salud) / `lesion_resuelta()` | cliente | RF-CLI-004 |
 | `congelar_bono(motivo, hasta)` ✋ | cliente | RF-CLI-007 |
 | `buscar_cliente(texto)` / `ficha_cliente(id)` | instructor | RF-CLI-006 |
-| `nota_interna(cliente_id, texto)` | instructor | RF-CLI-006 |
+| `nota_interna(cliente_id, texto)` (tabla `notas_internas`; el cliente nunca la ve) | instructor | RF-CLI-006 |
 | `borrar_mis_datos()` ✋ | cliente | RF-MEM-005 |
 
 ### 5.3 Cobros y facturación
@@ -192,7 +199,8 @@ Se implementa con `BetaAbstractMemoryTool` del SDK, con una ruta virtual **limit
 
 - Un cliente **no puede** abrir la memoria de otro: la ruta `/memories/cliente/` siempre apunta a la suya y no hay forma de escribir otro id.
 - Los datos de salud **no** van a la memoria libre. Van en la tabla `lesiones` (con consentimiento) y se consultan con herramientas.
-- El *system prompt* le pide al orquestador que mire `/memories/cliente/` al empezar y que guarde aquí lo que vaya a ser útil más adelante (por ejemplo, "prefiere a Laura" o "trabaja a turnos y cambia de horario cada semana").
+- Para ahorrar una llamada por turno, el código **inyecta** el contenido de `/memories/cliente/` en la parte variable del *system prompt* y el de `/memories/estudio/` en la parte estable (cacheada). La herramienta se usa sobre todo para **escribir**: el prompt le pide al orquestador que guarde lo útil (por ejemplo, "prefiere a Laura" o "trabaja a turnos y cambia de horario cada semana").
+- Cada archivo tiene un máximo de 4000 caracteres.
 
 ### 6.2 Resumen de la conversación
 
@@ -207,9 +215,11 @@ Cuando un número supera los 40 mensajes sin resumir, el worker llama a Claude (
 ## 8. WhatsApp
 
 - **Recepción**: `GET /webhook/whatsapp` (verificación del token) y `POST /webhook/whatsapp` (mensajes). Se verifica `X-Hub-Signature-256`, se deduplica por `message_id`, se encola y se responde 200.
-- **Mensajes de voz**: se descarga el audio y se transcribe (proveedor STT por decidir: Whisper API o similar) antes del orquestador.
+- **Mensajes de voz**: se descarga el audio y se transcribe con el `STTAdapter` antes del orquestador. El proveedor está por decidir; con `fake`, el asistente pide que lo escriban.
+- **Imágenes y documentos**: se reenvían al admin (aviso) y el orquestador recibe una nota. Si parece un justificante de pago, dice que el equipo lo comprobará y no activa nada (RF-COB-002).
+- **Modo humano**: tras `derivar_a_humano`, el bot no responde a ese número durante `humano_horas` (4 h por defecto). Los mensajes se reenvían al admin, que puede devolver el control con "reactivar +34…".
 - **Ventana de 24 h**: dentro de la ventana se envía texto libre. Fuera de ella **solo** se pueden enviar plantillas aprobadas por Meta (recordatorios, impagos, campañas, ofertas de lista de espera).
-- **Plantillas iniciales**: `recordatorio_clase`, `plaza_liberada`, `pago_pendiente`, `bono_caduca`, `resena`, `cumpleanos` y `campana_generica`.
+- **Plantillas**: ver `docs/plantillas-whatsapp.md`. Los avisos a terceros se guardan también en la conversación del destinatario, para que el bot entienda su respuesta (por ejemplo, un "SÍ" a una plaza liberada).
 - **Serialización**: los mensajes de un mismo número se procesan de uno en uno (lock en Redis por número) para no cruzar las respuestas.
 
 ## 9. Modelo de datos (resumen)
@@ -217,7 +227,7 @@ Cuando un número supera los 40 mensajes sin resumir, el worker llama a Claude (
 > Todas las tablas, salvo `estudio`, llevan `estudio_id` (RF-GEN-003); se omite abajo para que se lea mejor. Los teléfonos son únicos **por estudio**.
 
 ```
-estudio(id, nombre, zona_horaria, config_json)
+estudio(id, nombre, zona_horaria, config_json)   ← datos, políticas y horario semanal del TOML
 staff(id, nombre, telefono, rol[admin|instructor], activo)
 clientes(id, nombre, telefono UNIQUE, email, nivel, objetivos, fecha_nac,
          consent_salud, consent_marketing, consent_fecha, estado, creado_en)
@@ -233,15 +243,19 @@ bonos(id, cliente_id, producto_id, sesiones_total, sesiones_usadas,
 pagos(id, cliente_id, producto_id, importe, metodo, estado, proveedor_ref, factura_ref, creado_en)
 acciones_pendientes(codigo, tipo, payload_json, quien_confirma, expira_en, estado)
 memorias(id, ambito[cliente|estudio], cliente_id NULL, ruta, contenido, actualizado_en)
-conversaciones(id, telefono, cliente_id NULL, estado[bot|humano], ultima_entrada_en)
+conversaciones(id, telefono, cliente_id NULL, estado[bot|humano], ultima_entrada_en, humano_hasta)
 mensajes(id, conversacion_id, wa_message_id UNIQUE, rol, contenido, resumido, creado_en)
 resumenes(id, conversacion_id, contenido, hasta_mensaje_id)
 campanas(id, segmento_json, texto, plantilla, estado, aprobada_por, enviada_en)
+notas_internas(id, cliente_id, staff_id, texto, creado_en)
+envios_programados(id, clave UNIQUE, creado_en)     ← idempotencia del cron
 eventos_agente(id, conversacion_id, agente, herramienta, input, output, tokens_in,
                tokens_out, latencia_ms, creado_en)          ← auditoría (RNF-OBS-001)
 ```
 
-**Concurrencia en las reservas** (RF-RES-002): `SELECT ... FOR UPDATE` sobre la clase y el bono dentro de una transacción, con el aforo comprobado en la misma transacción.
+**Concurrencia en las reservas** (RF-RES-002): `SELECT ... FOR UPDATE` sobre la clase y el bono dentro de una transacción, con el aforo comprobado en la misma transacción. Cada llamada a una herramienta es una transacción propia, así que no se mantienen bloqueos mientras el modelo piensa.
+
+**Fechas**: se guardan siempre en UTC; se muestran en la zona horaria del estudio.
 
 ## 10. Estructura del repositorio
 
@@ -252,18 +266,23 @@ pilates/
 │   ├── settings.py         ← variables de entorno (pydantic-settings)
 │   └── estudio.toml        ← catálogo, políticas y horarios de ejemplo
 ├── app/
-│   ├── main.py             ← FastAPI
-│   ├── webhooks/           ← whatsapp.py, stripe.py
-│   ├── worker.py           ← arq + APScheduler
+│   ├── main.py             ← FastAPI: webhooks de WhatsApp y Stripe, /dev/pagar (fake)
+│   ├── conversacion.py     ← manejador: identificar → orquestador → enviar
+│   ├── worker.py           ← arq: cola de mensajes + cron
+│   ├── chat.py             ← chat por consola (T2.5)
+│   ├── webhooks/cola.py    ← encolado en Redis
 │   ├── agentes/
-│   │   ├── orquestador.py
-│   │   ├── base.py         ← ejecutar_subagente(), contexto, @requiere_rol
-│   │   ├── reservas.py  clientes.py  cobros.py  marketing.py
+│   │   ├── claude.py       ← cliente, Tool Runner, fallbacks, caching, auditoría
+│   │   ├── herramientas.py ← servicio → herramienta (transacción, errores, log)
+│   │   ├── subagentes.py   ← herramientas de Reservas, Clientes, Cobros y Marketing
+│   │   ├── orquestador.py  ← prompts y delegación
 │   │   ├── memoria.py      ← BetaAbstractMemoryTool sobre PostgreSQL
+│   │   ├── resumen.py      ← resumen de conversaciones largas
 │   │   └── prompts/        ← un .md por agente
 │   ├── servicios/          ← lógica de negocio pura (testeable sin LLM)
-│   ├── integraciones/      ← whatsapp_api.py, stripe.py, holded.py, stt.py
-│   └── db/                 ← modelos SQLAlchemy y migraciones Alembic
+│   ├── integraciones/      ← canal.py, pagos.py, facturacion.py, stt.py
+│   └── db/                 ← modelos SQLAlchemy, sesión y seed
+├── migrations/             ← Alembic
 ├── tests/
 │   ├── unit/               ← servicios
 │   └── evals/              ← conversaciones de prueba contra los agentes

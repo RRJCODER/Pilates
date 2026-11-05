@@ -34,3 +34,14 @@ def test_todas_las_tablas_de_negocio_tienen_estudio_id() -> None:
     for nombre, tabla in Base.metadata.tables.items():
         if nombre not in sin_estudio:
             assert "estudio_id" in tabla.c, nombre
+
+
+def test_extender_horario_no_duplica() -> None:
+    from app.db.seed import extender_horario
+
+    engine = create_engine("sqlite://")
+    seed(engine, CFG, desde=date(2026, 11, 2))
+    with sesion(engine) as s:
+        assert extender_horario(s, 1, date(2026, 11, 2)) == 0  # ya existen
+        assert extender_horario(s, 1, date(2026, 11, 9)) == 19  # una semana nueva
+        assert s.scalar(select(func.count()).select_from(Clase)) == 57

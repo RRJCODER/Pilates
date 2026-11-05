@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     holded_api_key: str = ""
 
     estudio_config: Path = Path("config/estudio.toml")
+    estudio_id: int = 1  # v1: un estudio por despliegue (RF-GEN-003)
+    base_url_publica: str = "http://localhost:8000"
 
 
 @lru_cache
