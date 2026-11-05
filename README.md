@@ -12,4 +12,17 @@ El proyecto sigue **Spec-Driven Development**: todo empieza en [`specs/`](specs/
 | [03 · Escenarios](specs/03-escenarios.md) | Criterios de aceptación y evals |
 | [04 · Plan de tareas](specs/04-plan-tareas.md) | Fases de implementación |
 
-Estado: **fase de specs**. Falta aprobar los specs para empezar la fase 0.
+Producto **genérico**: cada estudio se configura en `config/estudio.toml` y elige sus proveedores (pagos, facturación, canal) con variables de entorno.
+
+Estado: **fase 0 completada** (esqueleto, configuración, base de datos y estudio de ejemplo). Siguiente: fase 1, servicios de negocio.
+
+## Arranque rápido
+
+```bash
+cp .env.example .env
+docker compose up -d db redis
+uv venv && . .venv/bin/activate && uv pip install -e ".[dev]"
+alembic upgrade head
+python -m app.db.seed --demo-clientes 30
+pytest
+```

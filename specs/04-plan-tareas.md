@@ -3,11 +3,11 @@
 Cada tarea cita los requisitos que cubre. Una fase no empieza hasta que la anterior pasa sus verificaciones.
 
 ## Fase 0: Cimientos
-- [ ] T0.1 `pyproject.toml` (fastapi, anthropic, sqlalchemy, alembic, arq, apscheduler, pydantic-settings, httpx, stripe), con ruff, mypy y pytest.
-- [ ] T0.2 `docker-compose.yml` con postgres, redis, app y worker.
-- [ ] T0.3 `config/settings.py` y `config/estudio.toml` con datos de ejemplo (Q5).
-- [ ] T0.4 Modelos SQLAlchemy y la primera migración (diseño §9).
-- [ ] T0.5 Script `seed` con el estudio de ejemplo: 3 instructores, 40 clases semanales y 30 clientes.
+- [x] T0.1 `pyproject.toml` (fastapi, anthropic, sqlalchemy, alembic, arq, apscheduler, pydantic-settings, httpx, stripe), con ruff, mypy y pytest.
+- [x] T0.2 `docker-compose.yml` con postgres, redis, app y worker.
+- [x] T0.3 `config/settings.py` y `config/estudio.toml` con datos de ejemplo (Q5).
+- [x] T0.4 Modelos SQLAlchemy y la primera migración (diseño §9).
+- [x] T0.5 Script `seed` con el estudio de ejemplo: 1 admin y 3 instructores, 19 clases semanales (se generan 2 semanas) y 30 clientes demo.
 
 ## Fase 1: Servicios de negocio (sin LLM)
 - [ ] T1.1 `servicios/clases.py`: buscar, crear, modificar y cancelar (RF-RES-001, 007).

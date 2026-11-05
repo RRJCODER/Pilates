@@ -91,15 +91,22 @@ Formato EARS: *Cuando [evento], el sistema deberá [respuesta]*.
 - Una app móvil propia (WhatsApp es el canal).
 - Videoclases o contenido on-demand.
 - Generar facturas legales internamente (se integra un software homologado).
-- Varios estudios o sedes (el diseño no lo impide, pero no se implementa).
+- Varios estudios en un mismo despliegue (el esquema ya lleva `estudio_id`; se implementará en v2).
 
-## 6. Preguntas abiertas
+## 6. Producto genérico (decisiones)
 
-| # | Pregunta | Por defecto, si no se decide |
+Todavía no hay un estudio concreto como cliente, así que el producto es **genérico y configurable**. Se adapta a cualquier estudio de pilates sin tocar el código.
+
+- **RF-GEN-001**: Todo lo que es propio de un estudio (nombre, tono, horarios, tipos de clase, aforos, catálogo de bonos, precios, políticas de cancelación y lista de espera, recordatorios, FAQ) se define en `config/estudio.toml` y se carga en la base de datos con `seed`.
+- **RF-GEN-002**: Los pagos, la facturación, la mensajería y la transcripción de audio se integran mediante **adaptadores** con una interfaz común. Cada uno tiene una implementación `fake` para desarrollo y evals.
+- **RF-GEN-003**: Todas las tablas de negocio llevan `estudio_id`. En v1 hay **un estudio por despliegue** (marca blanca), pero el esquema queda listo para un SaaS con varios estudios en v2.
+- **RF-GEN-004**: El canal es un adaptador: `whatsapp` (Meta Cloud API) en producción y `consola` para pruebas locales.
+
+| # | Decisión pendiente para cada estudio | Solución genérica en v1 |
 |---|---|---|
-| Q1 | ¿Proveedor de pagos: Stripe, Redsys/Bizum o los dos? | Stripe Payment Links |
-| Q2 | ¿Software de facturación (Holded, Quipu, FacturaDirecta…)? | Holded (tiene API) |
-| Q3 | ¿Panel web para el admin en v1 o solo WhatsApp? | Solo WhatsApp en v1 y panel en v2 |
-| Q4 | ¿Número de WhatsApp: el actual del estudio o uno nuevo? | Uno nuevo para la API (el actual no puede seguir en la app) |
-| Q5 | Catálogo real: bonos, precios, aforos y políticas de cancelación | Datos de ejemplo en `config/estudio.toml` |
-| Q6 | ¿Integración con Google Calendar para los instructores? | No en v1 |
+| Q1 | Proveedor de pagos | `PagosAdapter`: `fake` y `stripe` (Redsys/Bizum como adaptador futuro) |
+| Q2 | Software de facturación | `FacturacionAdapter`: `ninguno` y `holded` (otros como adaptador) |
+| Q3 | Panel web para el admin | Solo WhatsApp y consola en v1; panel en v2 |
+| Q4 | Número de WhatsApp | Cada estudio da de alta su propio número en Meta (guía en `docs/`) |
+| Q5 | Catálogo, precios y políticas | Estudio de ejemplo en `config/estudio.toml` |
+| Q6 | Google Calendar | No en v1 |

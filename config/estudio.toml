@@ -1,0 +1,174 @@
+# Configuración de un estudio de ejemplo (RF-GEN-001).
+# Copia este archivo y adáptalo para cada estudio. Todo lo que hay aquí
+# se carga en la base de datos con `python -m app.db.seed`.
+
+[estudio]
+nombre = "Estudio Pilates Demo"
+zona_horaria = "Europe/Madrid"
+idioma = "es"
+direccion = "Calle Ejemplo 1, 28001 Madrid"
+telefono_contacto = "+34600000000"
+web = "https://example.com"
+google_review_url = "https://g.page/r/EJEMPLO/review"
+# Tono para los prompts: cercano | profesional | divertido
+tono = "cercano"
+
+[politicas]
+cancelacion_horas_limite = 12        # RF-RES-005
+cancelacion_tardia = "pierde_sesion" # pierde_sesion | sin_penalizacion
+lista_espera_horas_para_aceptar = 2  # RF-RES-004
+max_reservas_futuras = 8
+congelacion_permitida = true         # RF-CLI-007
+congelacion_max_dias = 30
+inactividad_dias = 21                # RF-MKT-002
+recordatorios_horas_antes = [24, 2]  # RF-MKT-001
+impagos_dias = [0, 3, 7]             # RF-COB-003
+resena_tras_clases = 3               # RF-MKT-003
+
+[[staff]]
+nombre = "Ana Admin"
+telefono = "+34600000001"
+rol = "admin"
+
+[[staff]]
+nombre = "Laura"
+telefono = "+34600000002"
+rol = "instructor"
+
+[[staff]]
+nombre = "Carlos"
+telefono = "+34600000003"
+rol = "instructor"
+
+[[staff]]
+nombre = "Marta"
+telefono = "+34600000004"
+rol = "instructor"
+
+[[tipos_clase]]
+clave = "reformer_inicial"
+nombre = "Reformer Inicial"
+modalidad = "reformer"
+nivel = "inicial"
+duracion_min = 50
+aforo = 6
+
+[[tipos_clase]]
+clave = "reformer_intermedio"
+nombre = "Reformer Intermedio"
+modalidad = "reformer"
+nivel = "intermedio"
+duracion_min = 50
+aforo = 6
+
+[[tipos_clase]]
+clave = "suelo"
+nombre = "Mat (Suelo)"
+modalidad = "suelo"
+nivel = "todos"
+duracion_min = 55
+aforo = 12
+
+[[tipos_clase]]
+clave = "prenatal"
+nombre = "Pilates Prenatal"
+modalidad = "suelo"
+nivel = "todos"
+duracion_min = 50
+aforo = 8
+
+[[productos]]
+clave = "suelta"
+nombre = "Clase suelta"
+tipo = "suelta"
+sesiones = 1
+validez_dias = 30
+precio = 20.0
+
+[[productos]]
+clave = "prueba"
+nombre = "Clase de prueba"
+tipo = "suelta"
+sesiones = 1
+validez_dias = 15
+precio = 10.0
+
+[[productos]]
+clave = "bono5"
+nombre = "Bono 5 sesiones"
+tipo = "bono"
+sesiones = 5
+validez_dias = 60
+precio = 85.0
+
+[[productos]]
+clave = "bono10"
+nombre = "Bono 10 sesiones"
+tipo = "bono"
+sesiones = 10
+validez_dias = 120
+precio = 150.0
+
+[[productos]]
+clave = "mensual8"
+nombre = "Mensualidad 2 clases/semana"
+tipo = "mensualidad"
+sesiones = 8
+validez_dias = 31
+precio = 110.0
+
+# Horario semanal: dia (0=lunes … 6=domingo), hora "HH:MM", tipo, instructor
+[[horario]]
+dias = [0, 2, 4]
+hora = "09:00"
+tipo = "reformer_inicial"
+instructor = "Laura"
+
+[[horario]]
+dias = [0, 2, 4]
+hora = "10:00"
+tipo = "suelo"
+instructor = "Laura"
+
+[[horario]]
+dias = [0, 1, 2, 3]
+hora = "18:00"
+tipo = "reformer_intermedio"
+instructor = "Carlos"
+
+[[horario]]
+dias = [0, 1, 2, 3]
+hora = "19:00"
+tipo = "reformer_inicial"
+instructor = "Marta"
+
+[[horario]]
+dias = [1, 3]
+hora = "20:00"
+tipo = "suelo"
+instructor = "Marta"
+
+[[horario]]
+dias = [1, 3]
+hora = "11:00"
+tipo = "prenatal"
+instructor = "Laura"
+
+[[horario]]
+dias = [5]
+hora = "10:00"
+tipo = "reformer_intermedio"
+instructor = "Carlos"
+
+# Memoria global del estudio (RF-MEM-004): se carga en /memories/estudio/
+[faq]
+"normas.md" = """
+- Llega 5 minutos antes. Calcetines antideslizantes obligatorios en reformer.
+- Si tienes una lesión o estás embarazada, avísanos antes de la clase.
+"""
+"ubicacion.md" = """
+Calle Ejemplo 1, Madrid. Metro Sol. Hay parking público a 100 m.
+"""
+"primera_clase.md" = """
+La clase de prueba cuesta 10 € y es de nivel inicial. Trae ropa cómoda y agua.
+"""

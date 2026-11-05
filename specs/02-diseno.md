@@ -45,9 +45,12 @@
 | Cola | arq + Redis | Responder 200 a Meta al momento y procesar en segundo plano |
 | Base de datos | PostgreSQL (Supabase) + SQLAlchemy 2 + Alembic | Transacciones para aforos, backups y panel gratuito |
 | LLM | Claude a través de `anthropic` (Tool Runner, `client.beta.messages.tool_runner`) | Bucle de agente sin tener que escribirlo a mano y con herramientas tipadas |
-| WhatsApp | Meta WhatsApp Cloud API (directa) | Sin intermediarios; plantillas para los mensajes proactivos |
-| Pagos | Stripe Payment Links + webhook (Q1) | Enlace en el chat y confirmación verificada |
-| Facturación | Holded API (Q2) | Cumplimiento de Verifactu delegado |
+| Canal | `CanalAdapter`: `whatsapp` (Meta Cloud API) · `consola` | Sin intermediarios; plantillas para los mensajes proactivos |
+| Pagos | `PagosAdapter`: `fake` · `stripe` (Payment Links + webhook) | Enlace en el chat y confirmación verificada |
+| Facturación | `FacturacionAdapter`: `ninguno` · `holded` | Cumplimiento de Verifactu delegado |
+| Transcripción | `STTAdapter`: `fake` · por decidir | Notas de voz |
+
+**Adaptadores (RF-GEN-002).** Viven en `app/integraciones/<tipo>/` y siguen un `Protocol` común. Cada estudio elige su implementación con variables de entorno (`PAGOS_PROVEEDOR=stripe`…). Las implementaciones `fake` permiten desarrollar y lanzar los evals sin cuentas externas.
 | Programador | APScheduler (en el worker) | Recordatorios e informes |
 | Despliegue | Docker en Railway/Render/Fly | Barato, con HTTPS para el webhook |
 
@@ -210,6 +213,8 @@ Cuando un número supera los 40 mensajes sin resumir, el worker llama a Claude (
 - **Serialización**: los mensajes de un mismo número se procesan de uno en uno (lock en Redis por número) para no cruzar las respuestas.
 
 ## 9. Modelo de datos (resumen)
+
+> Todas las tablas, salvo `estudio`, llevan `estudio_id` (RF-GEN-003); se omite abajo para que se lea mejor. Los teléfonos son únicos **por estudio**.
 
 ```
 estudio(id, nombre, zona_horaria, config_json)
