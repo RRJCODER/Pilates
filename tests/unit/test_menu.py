@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import pytest
 from sqlalchemy import Engine, select
 
-from app.agentes import claude
 from app.conversacion import Resultado, procesar_mensaje
-from app.db import sesion as modulo_sesion
 from app.db.modelos import (
     AccionPendiente,
     Bono,
@@ -26,29 +22,9 @@ from app.db.modelos import (
 )
 from app.db.sesion import sesion
 from app.integraciones.canal import CanalConsola
-from tests.conftest import ADMIN, AHORA, LUNES, MARTA
+from tests.conftest import ADMIN, AHORA, LUNES, MARTA, SinIA
 
 TEL = "+34611000222"
-
-
-class SinIA:
-    """Cliente de Claude que falla si se usa: el plan Básico no debe llamarlo."""
-
-    llamadas = 0
-
-    @property
-    def beta(self) -> Any:
-        SinIA.llamadas += 1
-        raise AssertionError("Se ha llamado a la IA")
-
-
-@pytest.fixture
-def entorno(engine: Engine, monkeypatch: pytest.MonkeyPatch) -> Iterator[Engine]:
-    monkeypatch.setattr(modulo_sesion, "get_engine", lambda url=None: engine)
-    SinIA.llamadas = 0
-    claude.set_cliente(SinIA())  # type: ignore[arg-type]
-    yield engine
-    claude.set_cliente(None)
 
 
 def poner_plan(engine: Engine, plan: str) -> None:
@@ -286,3 +262,15 @@ def test_baja(entorno: Engine) -> None:
 
 def test_lunes_es_manana() -> None:
     assert AHORA.date() + timedelta(days=1) == LUNES
+
+
+def test_plan_ia_sin_api_key_funciona_como_basico(entorno: Engine,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """RF-PLAN-004"""
+    from config.settings import get_settings
+
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "")
+    poner_plan(entorno, "ia")
+    crear_cliente(entorno)
+    res = Chat(TEL).escribir("¿puedo ir el jueves?")
+    assert res.menu and SinIA.llamadas == 0

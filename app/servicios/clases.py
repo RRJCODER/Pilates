@@ -158,6 +158,10 @@ def modificar_clase(s: Session, ctx: Contexto, clase_id: int, inicio: datetime |
 
 @requiere_rol(Rol.ADMIN)
 def cancelar_clase(s: Session, ctx: Contexto, clase_id: int, motivo: str) -> dict[str, Any]:
+    from config.settings import get_settings
+
+    if get_settings().demo:  # RF-DEMO-006: sin texto libre hacia otros visitantes
+        motivo = "cancelada por el estudio"
     clase = obtener_clase(s, ctx, clase_id)
     d = describir(s, clase, zona(s, ctx.estudio_id))
     n = len(_reservas_activas(s, clase.id))

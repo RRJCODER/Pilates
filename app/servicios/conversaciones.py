@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.modelos import Conversacion, EstadoConversacion, Mensaje, Resumen
-from app.servicios.base import Aviso, Contexto, a_utc, politicas
+from app.servicios.base import Aviso, Contexto, a_utc, mostrar_telefono, politicas
 from app.servicios.clientes import telefonos_admin
 
 ULTIMOS = 20          # mensajes que se envían literalmente al modelo
@@ -45,6 +45,12 @@ def guardar_entrante(s: Session, ctx: Contexto, texto: str,
         return False
     conv.ultima_entrada_en = ctx.ahora
     return True
+
+
+def es_primer_mensaje(s: Session, conversacion_id: int) -> bool:
+    n = s.scalar(select(func.count()).select_from(Mensaje).where(
+        Mensaje.conversacion_id == conversacion_id)) or 0
+    return n <= 1
 
 
 def guardar_respuesta(s: Session, conversacion_id: int, texto: str) -> None:
@@ -123,7 +129,7 @@ def derivar_a_humano(s: Session, ctx: Contexto, motivo: str, urgente: bool) -> d
     conv.estado = EstadoConversacion.HUMANO
     conv.humano_hasta = ctx.ahora + timedelta(hours=horas)
     icono = "🚨" if urgente else "🙋"
-    quien = f"{ctx.nombre or 'Contacto sin ficha'} ({ctx.telefono})"
+    quien = f"{ctx.nombre or 'Contacto sin ficha'} ({mostrar_telefono(ctx.telefono)})"
     for tel in telefonos_admin(s, ctx.estudio_id):
         ctx.avisos.append(Aviso(tel, f"{icono} {quien} necesita atención: {motivo}\n"
                                      f"El asistente no responderá a este número durante "

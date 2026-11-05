@@ -29,6 +29,7 @@ from app.db.modelos import (
     Estudio,
     Memoria,
     Producto,
+    Reserva,
     RolStaff,
     Staff,
     TipoClase,
@@ -190,7 +191,37 @@ def crear_clientes_demo(s: Session, estudio: Estudio, n: int, semilla: int = 7) 
         )
 
 
-def seed(engine: Engine, ruta_cfg: Path, demo_clientes: int = 0, desde: date | None = None) -> int:
+def crear_reservas_demo(s: Session, estudio: Estudio, semilla: int = 7) -> int:
+    """RF-DEMO-003: ocupación realista en la primera semana y una clase completa."""
+    rnd = random.Random(semilla)
+    bonos = list(s.scalars(select(Bono).where(Bono.estudio_id == estudio.id,
+                                              Bono.estado == EstadoBono.ACTIVO)))
+    clases = list(s.scalars(select(Clase).where(Clase.estudio_id == estudio.id)
+                            .order_by(Clase.inicio)))
+    primera_semana = [c for c in clases if c.inicio.date() < clases[0].inicio.date()
+                      + timedelta(days=7)] if clases else []
+    # La primera clase de reformer de mañana (o la primera que haya) se llena del todo
+    llena = next((c for c in primera_semana if c.aforo <= 6 and c.inicio.date()
+                  > date.today()), primera_semana[0] if primera_semana else None)
+    n = 0
+    for clase in primera_semana:
+        objetivo = clase.aforo if clase is llena else rnd.randint(0, clase.aforo - 1)
+        for b in rnd.sample(bonos, k=len(bonos)):
+            if objetivo == 0:
+                break
+            if b.sesiones_usadas >= b.sesiones_total:
+                continue
+            b.sesiones_usadas += 1
+            s.add(Reserva(estudio_id=estudio.id, clase_id=clase.id, cliente_id=b.cliente_id,
+                          bono_id=b.id))
+            objetivo -= 1
+            n += 1
+    s.flush()
+    return n
+
+
+def seed(engine: Engine, ruta_cfg: Path, demo_clientes: int = 0, desde: date | None = None,
+         demo_reservas: bool = False) -> int:
     Base.metadata.create_all(engine)
     cfg = cargar_config(ruta_cfg)
     with sesion(engine) as s:
@@ -198,15 +229,39 @@ def seed(engine: Engine, ruta_cfg: Path, demo_clientes: int = 0, desde: date | N
         generar_clases(s, estudio, cfg, desde or date.today())
         if demo_clientes:
             crear_clientes_demo(s, estudio, demo_clientes)
+            if demo_reservas:
+                crear_reservas_demo(s, estudio)
         return estudio.id
+
+
+def hay_estudio(engine: Engine) -> bool:
+    Base.metadata.create_all(engine)
+    with sesion(engine) as s:
+        return s.scalar(select(Estudio.id)) is not None
+
+
+def reiniciar(engine: Engine, ruta_cfg: Path) -> int:
+    """RF-DEMO-004: borra todos los datos y vuelve a cargar el estudio demo."""
+    with sesion(engine) as s:
+        for tabla in reversed(Base.metadata.sorted_tables):
+            s.execute(tabla.delete())
+    return seed(engine, ruta_cfg, demo_clientes=30, demo_reservas=True)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", type=Path, default=get_settings().estudio_config)
     ap.add_argument("--demo-clientes", type=int, default=0)
+    ap.add_argument("--demo-reservas", action="store_true",
+                    help="Rellena la primera semana con reservas ficticias (demo)")
+    ap.add_argument("--si-vacia", action="store_true",
+                    help="Solo carga el estudio si la base de datos está vacía")
     args = ap.parse_args()
-    estudio_id = seed(get_engine(), args.config, args.demo_clientes)
+    if args.si_vacia and hay_estudio(get_engine()):
+        print("La base de datos ya tiene un estudio; no se carga nada.")
+        return
+    estudio_id = seed(get_engine(), args.config, args.demo_clientes,
+                      demo_reservas=args.demo_reservas)
     print(f"Estudio {estudio_id} cargado desde {args.config}")
 
 

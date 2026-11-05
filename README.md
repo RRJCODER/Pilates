@@ -25,6 +25,7 @@ El proyecto sigue **Spec-Driven Development**: todo empieza en [`specs/`](specs/
 | [03 · Escenarios](specs/03-escenarios.md) | Criterios de aceptación y evals |
 | [04 · Plan de tareas](specs/04-plan-tareas.md) | Estado de cada tarea |
 | [Puesta en marcha](docs/puesta-en-marcha.md) | WhatsApp, Stripe, despliegue y piloto |
+| [Demo](docs/demo.md) | Demo pública por WhatsApp (modo `DEMO=true`) |
 
 ## Arranque rápido
 

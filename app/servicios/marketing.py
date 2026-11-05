@@ -39,6 +39,7 @@ from app.servicios.base import (
     Rol,
     a_utc,
     datos_estudio,
+    mostrar_telefono,
     requiere_rol,
 )
 from app.servicios.clases import ocupadas, zona
@@ -71,7 +72,8 @@ def clientes_inactivos(s: Session, ctx: Contexto, dias: int = 21) -> list[dict[s
                                              Cliente.estado == EstadoCliente.ACTIVO)):
         ultima = _ultima_asistencia(s, c.id)
         if ultima is None or a_utc(ultima) < limite:
-            out.append({"cliente_id": c.id, "nombre": c.nombre, "telefono": c.telefono,
+            out.append({"cliente_id": c.id, "nombre": c.nombre,
+                        "telefono": mostrar_telefono(c.telefono),
                         "ultima_clase": a_utc(ultima).date().isoformat() if ultima else None,
                         "consent_marketing": c.consent_marketing})
     return out
@@ -131,6 +133,11 @@ def enviar_campana(s: Session, ctx: Contexto, campana_id: int) -> dict[str, Any]
 def _ejecutar_campana(s: Session, ctx: Contexto, p: dict[str, Any]) -> dict[str, Any]:
     camp = s.get(Campana, int(p["campana_id"]))
     assert camp is not None
+    from config.settings import get_settings
+
+    if get_settings().demo:  # RF-DEMO-006: no se escribe a otros visitantes
+        camp.estado = EstadoCampana.DESCARTADA
+        return {"enviados": 0, "nota": "En la demo las campañas no se envían de verdad."}
     enviados = 0
     for cid in camp.segmento["clientes"]:
         cli = s.get(Cliente, cid)

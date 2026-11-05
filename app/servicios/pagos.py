@@ -31,6 +31,7 @@ from app.servicios.base import (
     ErrorNegocio,
     NoEncontrado,
     Rol,
+    mostrar_telefono,
     requiere_rol,
 )
 from app.servicios.bonos import activar_producto, describir_bono, producto_por_clave
@@ -118,8 +119,9 @@ def enviar_factura(s: Session, ctx: Contexto, pago_id: int | None = None) -> dic
         raise NoEncontrado("No encuentro ese pago.")
     if not pago.factura_ref:
         for tel in telefonos_admin(s, ctx.estudio_id):
-            ctx.avisos.append(Aviso(tel, f"🧾 {ctx.nombre} ({ctx.telefono}) pide la factura del "
-                                         f"pago {pago.id} ({pago.importe} €)."))
+            quien = f"{ctx.nombre} ({mostrar_telefono(ctx.telefono)})"
+            ctx.avisos.append(Aviso(tel, f"🧾 {quien} pide la factura del pago {pago.id} "
+                                         f"({pago.importe} €)."))
         return {"resultado": "solicitada_al_estudio",
                 "mensaje": "He pedido la factura al estudio; te la enviarán en breve."}
     url = get_facturacion().url_pdf(pago.factura_ref)

@@ -45,6 +45,14 @@ Cada tarea cita los requisitos que cubre. Una fase no empieza hasta que la anter
 - [x] T6.5 Enrutado por plan en `procesar_mensaje` (RF-PLAN-002/003).
 - [x] T6.6 Tests de E-BAS-01..04 y E-PLAN-01.
 
+## Fase 7: Demo y pruebas con IA (en paralelo)
+- [x] T7.1 Specs del modo demo (RF-DEMO-*, E-DEMO-*).
+- [x] T7.2 Modo demo: bono de regalo, comandos `DEMO`, bienvenida y reinicio nocturno.
+- [x] T7.3 Seed con reservas ficticias (ocupación realista y alguna clase completa).
+- [x] T7.4 Script de arranque (migraciones + seed si la BD está vacía) y guía de despliegue de la demo (`docs/demo.md`).
+- [ ] T7.5 ⏳ Alta en Meta (número de prueba) y despliegue. *Lo hace el usuario.*
+- [ ] T7.6 ⏳ Lanzar los evals con `ANTHROPIC_API_KEY` y ajustar los prompts (= T3.3).
+
 ## Fase 5: Puesta en marcha
 - [ ] T5.1 📄 *Guía en `docs/puesta-en-marcha.md`.* Alta en Meta Business, número nuevo y aprobación de plantillas (Q4).
 - [ ] T5.2 📄 *Guía en `docs/puesta-en-marcha.md`.* Despliegue (Railway o Render) con HTTPS, secretos y backups.

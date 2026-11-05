@@ -16,7 +16,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://pilates:pilates@db:5432/pilates
       REDIS_URL: redis://redis:6379/0
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: scripts/arranque.sh web
     ports: ["8000:8000"]
     depends_on: [db, redis]
   worker:
@@ -25,7 +25,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://pilates:pilates@db:5432/pilates
       REDIS_URL: redis://redis:6379/0
-    command: arq app.worker.WorkerSettings
+    command: scripts/arranque.sh worker
     depends_on: [db, redis]
 volumes:
   pgdata:

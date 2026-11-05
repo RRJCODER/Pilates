@@ -20,9 +20,9 @@ from app.agentes.orquestador import responder
 from app.db.modelos import Conversacion
 from app.db.sesion import sesion
 from app.integraciones.canal import Canal, get_canal
-from app.menu import motor
+from app.menu import demo, motor
 from app.servicios import conversaciones
-from app.servicios.base import Aviso, Contexto
+from app.servicios.base import Aviso, Contexto, mostrar_telefono
 from app.servicios.clientes import identificar, telefonos_admin
 
 log = logging.getLogger(__name__)
@@ -60,6 +60,8 @@ def procesar_mensaje(estudio_id: int, telefono: str, texto: str,
             entregar(estudio_id, avisos, canal)
             return Resultado(None, avisos, uso, derivado=True)
         conv = conversaciones.obtener_conversacion(s, ctx)
+        if demo.activo() and conversaciones.es_primer_mensaje(s, conv.id):
+            canal.enviar_texto(telefono, demo.BIENVENIDA)  # RF-DEMO-005
         plan = motor.plan_estudio(s, estudio_id)
         if motor.debe_manejar(s, plan, conv, texto, respuesta_id, ctx):
             salidas = motor.manejar(s, ctx, conv, texto, respuesta_id)  # sin IA
@@ -79,8 +81,9 @@ def procesar_mensaje(estudio_id: int, telefono: str, texto: str,
         respuesta = MENSAJE_ERROR
         with sesion() as s:
             for tel in telefonos_admin(s, estudio_id):
+                quien = f"{ctx.nombre or 'un contacto sin ficha'} ({mostrar_telefono(telefono)})"
                 ctx.avisos.append(Aviso(tel, f"⚠️ El asistente ha fallado respondiendo a "
-                                             f"{ctx.nombre or telefono} ({telefono}). "
+                                             f"{quien}. "
                                              f"Su mensaje: «{texto[:300]}»"))
 
     with sesion() as s:

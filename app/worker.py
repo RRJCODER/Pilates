@@ -128,6 +128,17 @@ async def resumir(_: dict[str, Any]) -> None:
             log.exception("No se pudo resumir la conversación %s", cid)
 
 
+async def reinicio_demo(_: dict[str, Any]) -> None:
+    """RF-DEMO-004: solo con DEMO=true."""
+    if not get_settings().demo:
+        return
+    from app.db.seed import reiniciar
+    from app.db.sesion import get_engine
+
+    await asyncio.to_thread(reiniciar, get_engine(), get_settings().estudio_config)
+    log.info("Demo reiniciada")
+
+
 class WorkerSettings:
     functions = [procesar_whatsapp]
     redis_settings = RedisSettings.from_dsn(get_settings().redis_url)
@@ -141,4 +152,5 @@ class WorkerSettings:
         cron(cast(Any, diario_tarde), hour={18}, minute={35}),
         cron(cast(Any, semanal), weekday="mon", hour={8}, minute={10}),
         cron(cast(Any, resumir), minute={20, 50}),
+        cron(cast(Any, reinicio_demo), hour={4}, minute={0}),
     ]

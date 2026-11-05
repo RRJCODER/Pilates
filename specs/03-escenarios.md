@@ -98,3 +98,19 @@ Cada escenario es una conversación de prueba. Sirven a la vez de criterio de ac
 **E-PLAN-01: plan IA con botones** (RF-PLAN-002)
 - Pasos: en el plan IA, se pulsa `Mi bono`.
 - Resultado esperado: se responde sin llamar a la IA. Si después se escribe texto libre, sí se llama al orquestador.
+
+## Modo demo
+
+**E-DEMO-01: probar como cliente** (RF-DEMO-001, RF-DEMO-005)
+- Un número nuevo escribe "hola" → se le explica que es una demo → se da de alta → recibe 5 sesiones → reserva sin pagar.
+
+**E-DEMO-02: cambiar de rol** (RF-DEMO-002)
+- `DEMO ADMIN` → el menú de admin. `DEMO CLIENTE` → vuelve al menú de cliente, con su bono intacto.
+- Con `DEMO=false`, `DEMO ADMIN` es texto normal y no da ningún permiso.
+
+**E-DEMO-03: reinicio** (RF-DEMO-004)
+- Después del reinicio, las reservas y los clientes creados durante el día ya no están, y el horario y los clientes ficticios vuelven a estar.
+
+**E-DEMO-04: un visitante admin no ve ni contacta a otros** (RF-DEMO-006)
+- El visitante A se da de alta. El visitante B escribe `DEMO ADMIN` y abre los clientes inactivos, `responder <tel de A> hola` y una campaña.
+- Resultado esperado: B ve el teléfono de A enmascarado, A no recibe nada y B no recibe el aviso del alta de A.

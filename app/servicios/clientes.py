@@ -35,6 +35,7 @@ from app.servicios.base import (
     ErrorNegocio,
     NoEncontrado,
     Rol,
+    mostrar_telefono,
     requiere_rol,
 )
 from app.servicios.bonos import describir_bono
@@ -58,9 +59,15 @@ def identificar(s: Session, estudio_id: int, telefono: str) -> Contexto:
                     nombre=cli.nombre if cli else None, cliente_id=cli.id if cli else None)
 
 
+SUFIJO_DEMO = " (demo)"
+
+
 def telefonos_admin(s: Session, estudio_id: int) -> list[str]:
-    return list(s.scalars(select(Staff.telefono).where(
-        Staff.estudio_id == estudio_id, Staff.rol == RolStaff.ADMIN, Staff.activo.is_(True))))
+    q = select(Staff.telefono).where(
+        Staff.estudio_id == estudio_id, Staff.rol == RolStaff.ADMIN, Staff.activo.is_(True))
+    # RF-DEMO-006: los visitantes que se hacen admin en la demo no reciben avisos ajenos
+    q = q.where(Staff.nombre.not_like(f"%{SUFIJO_DEMO}"))
+    return list(s.scalars(q))
 
 
 @requiere_rol(Rol.LEAD)
@@ -86,8 +93,12 @@ def alta_cliente(s: Session, ctx: Contexto, nombre: str, acepta_privacidad: bool
     cli.consent_fecha, cli.estado = ctx.ahora, EstadoCliente.ACTIVO
     s.flush()
     ctx.rol, ctx.cliente_id, ctx.nombre = Rol.CLIENTE, cli.id, cli.nombre
+    from app.menu import demo  # RF-DEMO-001 (no hace nada fuera de la demo)
+
+    demo.regalar_bono(s, ctx)
     for tel in telefonos_admin(s, ctx.estudio_id):
-        ctx.avisos.append(Aviso(tel, f"🆕 Nuevo cliente: {nombre} ({ctx.telefono}). "
+        ctx.avisos.append(Aviso(tel, f"🆕 Nuevo cliente: {nombre} "
+                                     f"({mostrar_telefono(ctx.telefono)}). "
                                      f"Nivel {cli.nivel}. Objetivos: {objetivos or '-'}"))
     return {"resultado": "ok", "cliente_id": cli.id}
 
@@ -149,7 +160,8 @@ def buscar_cliente(s: Session, ctx: Contexto, texto: str) -> list[dict[str, Any]
                               or_(func.lower(Cliente.nombre).like(patron),
                                   Cliente.telefono.like(patron),
                                   func.lower(func.coalesce(Cliente.email, "")).like(patron)))
-    return [{"cliente_id": c.id, "nombre": c.nombre, "telefono": c.telefono, "nivel": c.nivel}
+    return [{"cliente_id": c.id, "nombre": c.nombre, "telefono": mostrar_telefono(c.telefono),
+             "nivel": c.nivel}
             for c in s.scalars(q.limit(10))]
 
 
@@ -164,7 +176,8 @@ def ficha_cliente(s: Session, ctx: Contexto, cliente_id: int) -> dict[str, Any]:
                       .order_by(NotaInterna.creado_en.desc()).limit(10))
     lesiones = s.scalars(select(Lesion).where(Lesion.cliente_id == c.id,
                                               Lesion.activa.is_(True)))
-    return {"cliente_id": c.id, "nombre": c.nombre, "telefono": c.telefono, "email": c.email,
+    return {"cliente_id": c.id, "nombre": c.nombre, "telefono": mostrar_telefono(c.telefono),
+            "email": c.email,
             "nivel": c.nivel, "objetivos": c.objetivos, "estado": c.estado,
             "consent_marketing": c.consent_marketing, "asistencias": asistencias,
             "bonos": [describir_bono(b) for b in bonos],

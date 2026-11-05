@@ -81,7 +81,10 @@ class ClaudeFalso:
 
 @pytest.fixture
 def falso(engine: Engine, monkeypatch: pytest.MonkeyPatch) -> Iterator[ClaudeFalso]:
+    from config.settings import get_settings
+
     monkeypatch.setattr(modulo_sesion, "get_engine", lambda url=None: engine)
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "test")
     f = ClaudeFalso()
     claude.set_cliente(anthropic.Anthropic(
         api_key="test", http_client=httpx2.Client(transport=httpx2.MockTransport(f)),

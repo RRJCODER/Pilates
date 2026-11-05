@@ -95,3 +95,31 @@ def staff_ctx(s: Session, telefono: str) -> Contexto:
     c = ctx_de(s, telefono)
     assert c.rol in (Rol.ADMIN, Rol.INSTRUCTOR)
     return c
+
+
+class SinIA:
+    """Cliente de Claude que falla si se usa: el plan Básico no debe llamarlo."""
+
+    llamadas = 0
+
+    @property
+    def beta(self) -> Any:
+        SinIA.llamadas += 1
+        raise AssertionError("Se ha llamado a la IA")
+
+
+@pytest.fixture
+def entorno(engine: Engine, monkeypatch: pytest.MonkeyPatch) -> Iterator[Engine]:
+    """BD de test como BD de la app y un Claude que falla si se usa."""
+    from app.agentes import claude
+    from app.db import sesion as modulo_sesion
+    from config.settings import get_settings
+
+    monkeypatch.setattr(modulo_sesion, "get_engine", lambda url=None: engine)
+    monkeypatch.setattr(get_settings(), "anthropic_api_key", "test")
+    SinIA.llamadas = 0
+    claude.set_cliente(SinIA())  # type: ignore[arg-type]
+    yield engine
+    claude.set_cliente(None)
+
+

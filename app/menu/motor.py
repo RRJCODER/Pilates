@@ -29,6 +29,7 @@ from app.db.modelos import (
     Memoria,
 )
 from app.integraciones.canal import Canal, Fila
+from app.menu import demo
 from app.servicios import (
     acciones,
     bonos,
@@ -115,7 +116,13 @@ RE_STAFF = re.compile(r"^(reactivar|responder)\s+(\+?\d{6,15})\s*(.*)$", re.I | 
 
 
 def plan_estudio(s: Session, estudio_id: int) -> str:
-    return str(datos_estudio(s, estudio_id).get("plan", "ia")).lower()
+    """RF-PLAN-001/004: sin API key de Anthropic, el plan IA funciona como Básico."""
+    from config.settings import get_settings
+
+    plan = str(datos_estudio(s, estudio_id).get("plan", "ia")).lower()
+    if plan == "ia" and not get_settings().anthropic_api_key:
+        return "basico"
+    return plan
 
 
 def debe_manejar(s: Session, plan: str, conv: Conversacion, texto: str,
@@ -126,6 +133,8 @@ def debe_manejar(s: Session, plan: str, conv: Conversacion, texto: str,
     if ctx.rol == Rol.ADMIN and RE_STAFF.match(texto.strip()):
         return True
     clave = normalizar(texto)
+    if demo.activo() and clave.startswith("demo"):
+        return True
     if clave in ("si", "no"):
         # En el plan IA, un "sí" puede contestar a una pregunta de la IA: solo lo
         # resuelve el menú si hay una plaza ofrecida o una acción pendiente.
@@ -168,6 +177,9 @@ def _despachar(s: Session, ctx: Contexto, conv: Conversacion, texto: str,
         return _comando_admin(s, ctx, m.group(1).lower(), m.group(2), m.group(3))
 
     clave = normalizar(texto)
+    respuesta_demo = demo.comando(s, ctx, clave)
+    if respuesta_demo is not None:
+        return [Texto(respuesta_demo)] + menu_principal(s, ctx)
     if clave == "menu":
         return menu_principal(s, ctx)
     if clave == "baja":
@@ -613,6 +625,8 @@ def _comando_admin(s: Session, ctx: Contexto, orden: str, tel: str,
         r = conversaciones.reactivar_bot(s, ctx, tel)
         return [Texto("Listo, el asistente vuelve a atender a ese número." if r["resultado"]
                       == "ok" else "No encuentro conversación con ese número.")]
+    if demo.activo():  # RF-DEMO-006
+        return [Texto("En la demo no se puede escribir a otros números 🙂")]
     if not resto.strip():
         return [Texto("Escribe: responder +34… tu mensaje")]
     ctx.avisos.append(Aviso(tel, resto.strip()))

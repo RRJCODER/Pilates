@@ -139,3 +139,12 @@ def datos_estudio(s: Session, estudio_id: int) -> dict[str, Any]:
 def a_utc(dt: datetime) -> datetime:
     """SQLite devuelve datetimes sin zona; los normalizamos a UTC."""
     return dt.replace(tzinfo=UTC) if dt.tzinfo is None else dt.astimezone(UTC)
+
+
+def mostrar_telefono(tel: str) -> str:
+    """RF-DEMO-006: en la demo los teléfonos se enmascaran."""
+    from config.settings import get_settings
+
+    if not get_settings().demo or len(tel) < 7:
+        return tel
+    return f"{tel[:4]}•• ••• {tel[-3:]}"

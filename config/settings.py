@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
@@ -42,6 +43,17 @@ class Settings(BaseSettings):
     estudio_config: Path = Path("config/estudio.toml")
     estudio_id: int = 1  # v1: un estudio por despliegue (RF-GEN-003)
     base_url_publica: str = "http://localhost:8000"
+    # Modo demo (RF-DEMO-*): NUNCA en un estudio real
+    demo: bool = False
+
+    @field_validator("database_url")
+    @classmethod
+    def _driver_psycopg(cls, v: str) -> str:
+        """Railway/Render/Heroku dan `postgres://`; SQLAlchemy necesita el driver."""
+        for prefijo in ("postgres://", "postgresql://"):
+            if v.startswith(prefijo):
+                return "postgresql+psycopg://" + v[len(prefijo):]
+        return v
 
 
 @lru_cache
