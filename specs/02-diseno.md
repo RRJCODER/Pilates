@@ -243,7 +243,8 @@ bonos(id, cliente_id, producto_id, sesiones_total, sesiones_usadas,
 pagos(id, cliente_id, producto_id, importe, metodo, estado, proveedor_ref, factura_ref, creado_en)
 acciones_pendientes(codigo, tipo, payload_json, quien_confirma, expira_en, estado)
 memorias(id, ambito[cliente|estudio], cliente_id NULL, ruta, contenido, actualizado_en)
-conversaciones(id, telefono, cliente_id NULL, estado[bot|humano], ultima_entrada_en, humano_hasta)
+conversaciones(id, telefono, cliente_id NULL, estado[bot|humano], ultima_entrada_en, humano_hasta,
+               flujo JSON NULL)                     ← paso de un flujo de menú que espera texto
 mensajes(id, conversacion_id, wa_message_id UNIQUE, rol, contenido, resumido, creado_en)
 resumenes(id, conversacion_id, contenido, hasta_mensaje_id)
 campanas(id, segmento_json, texto, plantilla, estado, aprobada_por, enviada_en)
@@ -257,7 +258,24 @@ eventos_agente(id, conversacion_id, agente, herramienta, input, output, tokens_i
 
 **Fechas**: se guardan siempre en UTC; se muestran en la zona horaria del estudio.
 
-## 10. Estructura del repositorio
+## 10. Planes y motor de menús (RF-PLAN-*, RF-BAS-*)
+
+```
+mensaje entrante
+   ├─ ¿pulsación de botón/lista (respuesta_id)? ──────────► motor de menús (sin IA)
+   ├─ ¿hay un flujo esperando texto (p. ej. el nombre)? ──► motor de menús
+   ├─ ¿palabra clave (MENÚ, BAJA, SÍ, NO)? ───────────────► motor de menús
+   └─ texto libre ─┬─ plan IA ──────► orquestador (§4)
+                   └─ plan Básico ──► motor de menús (aviso + menú principal)
+```
+
+- **Sin estado en los botones**: el id de cada opción lleva la acción y sus datos (`r:dia:2026-11-05`, `r:clase:123`, `cx:45`, `ok:A7K2`…), así que pulsar un botón antiguo sigue funcionando. Los servicios vuelven a comprobar todo (aforo, propiedad de la reserva, rol).
+- **Estado solo para texto**: los flujos que esperan texto (el nombre en el alta) guardan su paso en `conversaciones.flujo` (JSON). Cualquier botón o `MENÚ` lo descarta.
+- **Salidas**: el motor devuelve una lista de `Texto | Botones | Lista`. El canal las envía con los límites de WhatsApp: hasta 3 botones de 20 caracteres, y listas de hasta 10 filas, con títulos de 24 caracteres y descripciones de 72. El motor recorta los textos para no superarlos.
+- **Historial**: se guardan tanto la opción elegida (su título) como lo que responde el menú, así que si el estudio tiene plan IA, la IA tiene contexto cuando alguien pasa a escribir.
+- El motor llama a los **mismos servicios** que los subagentes, con el mismo `Contexto` y los mismos `@requiere_rol`.
+
+## 11. Estructura del repositorio
 
 ```
 pilates/
@@ -279,6 +297,7 @@ pilates/
 │   │   ├── memoria.py      ← BetaAbstractMemoryTool sobre PostgreSQL
 │   │   ├── resumen.py      ← resumen de conversaciones largas
 │   │   └── prompts/        ← un .md por agente
+│   ├── menu/               ← motor de menús y botones (plan Básico y pulsaciones del plan IA)
 │   ├── servicios/          ← lógica de negocio pura (testeable sin LLM)
 │   ├── integraciones/      ← canal.py, pagos.py, facturacion.py, stt.py
 │   └── db/                 ← modelos SQLAlchemy, sesión y seed

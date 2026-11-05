@@ -4,6 +4,17 @@ Un asistente por **WhatsApp** que gestiona un estudio de pilates. Un **orquestad
 
 Es un producto **genérico**: cada estudio se configura en `config/estudio.toml` y elige sus proveedores (pagos, facturación, canal) con variables de entorno.
 
+## Planes
+
+| | **Básico** | **IA** |
+|---|---|---|
+| Menús y botones de WhatsApp (reservar, cancelar, bono, pagar, alta…) | ✅ | ✅ |
+| Recordatorios, lista de espera, impagos, cumpleaños, informe semanal | ✅ | ✅ |
+| Escribir en lenguaje libre, memoria de preferencias, campañas redactadas | — | ✅ |
+| Coste de IA | 0 | Solo cuando se escribe texto libre |
+
+Se elige con `plan = "basico"` o `plan = "ia"` en `[estudio]`. En el plan IA, los botones también se resuelven sin IA.
+
 El proyecto sigue **Spec-Driven Development**: todo empieza en [`specs/`](specs/).
 
 | Documento | Contenido |
@@ -23,7 +34,7 @@ docker compose up -d db redis
 uv venv && . .venv/bin/activate && uv pip install -e ".[dev]"
 alembic upgrade head
 python -m app.db.seed --demo-clientes 30
-python -m app.chat --como +34600000001     # hablar con el agente como admin
+python -m app.chat --como +34600000001     # hablar como admin (escribe el número para pulsar un botón)
 ```
 
 ## Tests

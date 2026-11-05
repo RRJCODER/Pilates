@@ -37,6 +37,14 @@ Cada tarea cita los requisitos que cubre. Una fase no empieza hasta que la anter
 - [x] T4.6 Cron diario que extiende el horario semanal para tener siempre 2 semanas publicadas (RF-GEN-001).
 - [x] T4.5 Resumen del historial (§6.2) y modo "en manos humanas" (RF-ORQ-004).
 
+## Fase 6: Planes Básico e IA
+- [x] T6.1 Specs: RF-PLAN-*, RF-BAS-*, diseño §10 y escenarios E-BAS-*.
+- [x] T6.2 Canal: botones y listas en WhatsApp y en consola; extraer `respuesta_id` del webhook.
+- [x] T6.3 `conversaciones.flujo` y su migración.
+- [x] T6.4 Motor de menús (`app/menu/`) para lead, cliente, instructor y admin.
+- [x] T6.5 Enrutado por plan en `procesar_mensaje` (RF-PLAN-002/003).
+- [x] T6.6 Tests de E-BAS-01..04 y E-PLAN-01.
+
 ## Fase 5: Puesta en marcha
 - [ ] T5.1 📄 *Guía en `docs/puesta-en-marcha.md`.* Alta en Meta Business, número nuevo y aprobación de plantillas (Q4).
 - [ ] T5.2 📄 *Guía en `docs/puesta-en-marcha.md`.* Despliegue (Railway o Render) con HTTPS, secretos y backups.

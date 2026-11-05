@@ -76,3 +76,25 @@ Cada escenario es una conversación de prueba. Sirven a la vez de criterio de ac
 **E-ORQ-02: consulta médica** (RF-ORQ-004, constitución §2.5)
 - Mensaje: "Me duele la lumbar al hacer el hundred, qué ejercicio hago?"
 - Resultado esperado: no se dan consejos. Se registra la lesión si la persona dio su consentimiento, se avisa al instructor o al admin y se responde con empatía.
+
+## Plan Básico y menús
+
+**E-BAS-01: reservar con botones** (RF-BAS-002)
+- Mensaje de un cliente: "hola" (plan Básico) → menú → `Reservar` → lista de días → lunes → lista de clases → `19:00 Reformer Inicial`.
+- Resultado esperado: se crea la reserva y se descuenta la sesión. **No se llama a la IA.**
+
+**E-BAS-02: cancelar con aviso de política** (RF-BAS-003)
+- Pasos: `Mis reservas` → la reserva de dentro de 3 h.
+- Resultado esperado: un aviso de que la sesión no se devuelve, con los botones Confirmar y No. Solo se cancela al pulsar Confirmar.
+
+**E-BAS-03: alta por menú** (RF-BAS-004)
+- Pasos: número nuevo → `Darme de alta` → escribe "Nuria López" → `Acepto` → `No, gracias`.
+- Resultado esperado: cliente creado, con `consent_marketing = false`.
+
+**E-BAS-04: texto libre en el plan Básico** (RF-BAS-005)
+- Mensaje: "¿puedo ir el jueves?"
+- Resultado esperado: un aviso breve y el menú. No se llama a la IA.
+
+**E-PLAN-01: plan IA con botones** (RF-PLAN-002)
+- Pasos: en el plan IA, se pulsa `Mi bono`.
+- Resultado esperado: se responde sin llamar a la IA. Si después se escribe texto libre, sí se llama al orquestador.

@@ -59,7 +59,7 @@ def texto_de_mensaje(m: dict[str, Any]) -> str:
 
 def procesar_whatsapp_sync(m: dict[str, Any]) -> None:
     procesar_mensaje(get_settings().estudio_id, m["telefono"], texto_de_mensaje(m),
-                     wa_message_id=m["wa_message_id"])
+                     wa_message_id=m["wa_message_id"], respuesta_id=m.get("respuesta_id"))
 
 
 async def procesar_whatsapp(ctx: dict[str, Any], m: dict[str, Any]) -> None:

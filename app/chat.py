@@ -3,6 +3,7 @@
     python -m app.chat --como +34600000001          # como admin del estudio de ejemplo
     python -m app.chat --como +34612345678          # como contacto nuevo
 
+Para pulsar un botón o una opción de lista, escribe su número (`1`, `2`…).
 Comandos: `:como <tel>` cambia de remitente · `:pagar <ref>` simula el pago de un
 enlace · `:cron <tarea>` lanza una tarea del cron · `:uso` tokens del último turno ·
 `:salir`.
@@ -69,7 +70,14 @@ def main() -> None:
             else:
                 asyncio.run(tarea({}))
             continue
-        resultado = procesar_mensaje(cfg.estudio_id, tel, texto, canal=canal)
+        respuesta_id = None
+        eleccion = re.fullmatch(r"#?(\d{1,2})", texto)
+        opciones = canal.opciones.get(tel, [])
+        if eleccion and 1 <= int(eleccion.group(1)) <= len(opciones):
+            respuesta_id, texto = opciones[int(eleccion.group(1)) - 1]
+            print(f"   (pulsas «{texto}»)")
+        resultado = procesar_mensaje(cfg.estudio_id, tel, texto, canal=canal,
+                                     respuesta_id=respuesta_id)
         ultimo_uso = resultado.uso
 
 

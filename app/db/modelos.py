@@ -320,6 +320,8 @@ class Conversacion(Base):
     estado: Mapped[EstadoConversacion] = mapped_column(String(20), default=EstadoConversacion.BOT)
     ultima_entrada_en: Mapped[datetime | None]
     humano_hasta: Mapped[datetime | None]
+    # Paso de un flujo de menú que espera texto (diseño §10)
+    flujo: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
 
 class Mensaje(Base):

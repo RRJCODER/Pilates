@@ -66,12 +66,15 @@ def extraer_mensajes(datos: dict[str, Any]) -> list[dict[str, Any]]:
                         "tipo": tipo}
                 if tipo == "text":
                     base["texto"] = m["text"]["body"]
-                elif tipo == "button":
+                elif tipo == "button":  # botón de respuesta rápida de una plantilla
                     base["texto"] = m["button"].get("text", "")
-                elif tipo == "interactive":
+                    if m["button"].get("payload"):
+                        base["respuesta_id"] = m["button"]["payload"]
+                elif tipo == "interactive":  # botón o lista (RF-PLAN-002)
                     i = m["interactive"]
-                    base["texto"] = (i.get("button_reply") or i.get("list_reply") or {}).get(
-                        "title", "")
+                    elegido = i.get("button_reply") or i.get("list_reply") or {}
+                    base["texto"] = elegido.get("title", "")
+                    base["respuesta_id"] = elegido.get("id")
                 elif tipo in ("audio", "voice"):
                     base["media_id"] = m[tipo]["id"]
                 elif tipo in ("image", "document"):

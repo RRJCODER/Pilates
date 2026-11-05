@@ -10,6 +10,8 @@ direccion = "Calle Ejemplo 1, 28001 Madrid"
 telefono_contacto = "+34600000000"
 web = "https://example.com"
 google_review_url = "https://g.page/r/EJEMPLO/review"
+# Plan contratado (RF-PLAN-001): "basico" = menús y botones, sin IA · "ia" = menús + IA
+plan = "ia"
 # Tono para los prompts: cercano | profesional | divertido
 tono = "cercano"
 

@@ -20,6 +20,7 @@ from app.agentes.orquestador import responder
 from app.db.modelos import Conversacion
 from app.db.sesion import sesion
 from app.integraciones.canal import Canal, get_canal
+from app.menu import motor
 from app.servicios import conversaciones
 from app.servicios.base import Aviso, Contexto
 from app.servicios.clientes import identificar, telefonos_admin
@@ -37,13 +38,17 @@ class Resultado:
     uso: Uso
     duplicado: bool = False
     derivado: bool = False
+    menu: bool = False  # respondido por el motor de menús, sin IA
 
 
 def procesar_mensaje(estudio_id: int, telefono: str, texto: str,
                      wa_message_id: str | None = None, canal: Canal | None = None,
-                     ahora: datetime | None = None) -> Resultado:
+                     ahora: datetime | None = None,
+                     respuesta_id: str | None = None) -> Resultado:
+    """`respuesta_id`: id del botón u opción de lista pulsada (diseño §10)."""
     canal = canal or get_canal()
     uso = Uso()
+    salidas: list[motor.Salida] | None = None
     with sesion() as s:
         ctx = identificar(s, estudio_id, telefono)
         ctx.ahora = ahora or datetime.now(UTC)
@@ -52,14 +57,20 @@ def procesar_mensaje(estudio_id: int, telefono: str, texto: str,
         if conversaciones.en_manos_humanas(s, ctx):
             conversaciones.reenviar_a_admin(s, ctx, texto)
             avisos = list(ctx.avisos)
-            ctx.avisos.clear()
-            derivado = True
+            entregar(estudio_id, avisos, canal)
+            return Resultado(None, avisos, uso, derivado=True)
+        conv = conversaciones.obtener_conversacion(s, ctx)
+        plan = motor.plan_estudio(s, estudio_id)
+        if motor.debe_manejar(s, plan, conv, texto, respuesta_id, ctx):
+            salidas = motor.manejar(s, ctx, conv, texto, respuesta_id)  # sin IA
+            conversaciones.guardar_respuesta(s, conv.id, motor.como_texto(salidas))
         else:
-            derivado = False
-        hist = conversaciones.historial(s, ctx.conversacion_id or 0)
-    if derivado:
-        entregar(estudio_id, avisos, canal)
-        return Resultado(None, avisos, uso, derivado=True)
+            hist = conversaciones.historial(s, conv.id)
+
+    if salidas is not None:
+        motor.enviar(canal, telefono, salidas)
+        entregar(estudio_id, ctx.avisos, canal)
+        return Resultado(motor.como_texto(salidas), list(ctx.avisos), uso, menu=True)
 
     try:
         respuesta = responder(ctx, hist.mensajes, hist.resumen, uso)

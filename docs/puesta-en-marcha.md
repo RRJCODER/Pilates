@@ -4,7 +4,7 @@ Esta guía sirve para dejar el agente funcionando para un estudio concreto. Hay 
 
 ## 1. Configurar el estudio
 
-1. Copia `config/estudio.toml` y rellénalo con los datos reales: nombre, dirección, staff con sus teléfonos en formato `+34…`, tipos de clase, aforos, horario semanal, catálogo y precios, políticas y FAQ.
+1. Copia `config/estudio.toml` y rellénalo con los datos reales: el **plan** (`basico` o `ia`; con `basico` no hace falta `ANTHROPIC_API_KEY`), nombre, dirección, staff con sus teléfonos en formato `+34…`, tipos de clase, aforos, horario semanal, catálogo y precios, políticas y FAQ.
 2. Rellena `.env` a partir de `.env.example`.
 3. Crea la base de datos y carga el estudio:
    ```bash
@@ -24,6 +24,9 @@ python -m app.chat --como +34612345678     # como contacto nuevo
 Con `PAGOS_PROVEEDOR=fake`, los enlaces de pago se simulan con `:pagar <enlace>` en la consola o abriendo `/dev/pagar/<ref>`.
 
 ## 3. WhatsApp (Meta Cloud API)
+
+> El número queda conectado a la API y ya no se puede usar en la app de WhatsApp. Cuando una conversación se deriva a una persona, el admin recibe los mensajes en su propio WhatsApp y contesta escribiendo al asistente `responder +34… mensaje`. Para devolver el control al bot: `reactivar +34…`.
+
 
 1. Crea una app de tipo *Business* en [developers.facebook.com](https://developers.facebook.com) y añade el producto **WhatsApp**.
 2. Da de alta un número **nuevo** o migra el del estudio. Un número que se usa con la API ya no puede usarse en la app normal de WhatsApp.

@@ -23,7 +23,7 @@ Formato EARS: *Cuando [evento], el sistema deberá [respuesta]*.
 - **RF-ORQ-001**: Cuando llegue un mensaje, el sistema deberá identificar al remitente (cliente, lead o staff) antes de llamar al modelo.
 - **RF-ORQ-002**: El orquestador deberá delegar en el subagente que corresponda según la intención, y podrá encadenar varios. Ejemplo: "reserva el jueves y dime cuántas clases me quedan" pasa por Reservas y después por Clientes.
 - **RF-ORQ-003**: Cuando la intención no esté clara, el orquestador deberá hacer **una sola** pregunta para aclararla.
-- **RF-ORQ-004**: Cuando haya una queja, una urgencia, una consulta médica o se pida "hablar con una persona", el sistema deberá avisar al admin y decírselo al cliente.
+- **RF-ORQ-004**: Cuando haya una queja, una urgencia, una consulta médica o se pida "hablar con una persona", el sistema deberá avisar al admin y decírselo al cliente. Como el número lo usa la API, el admin contesta desde su propio WhatsApp escribiendo al asistente `responder +34… mensaje`, y devuelve el control al bot con `reactivar +34…`.
 - **RF-ORQ-005**: El sistema deberá responder en el idioma del cliente (por defecto, español).
 - **RF-ORQ-006**: El sistema deberá aceptar notas de voz (transcritas) e imágenes (por ejemplo, un justificante de pago).
 
@@ -74,6 +74,33 @@ Formato EARS: *Cuando [evento], el sistema deberá [respuesta]*.
 - **RF-MEM-004**: El estudio tendrá una **memoria global** (FAQ, normas, precios, ubicación y políticas) que mantiene el admin.
 - **RF-MEM-005**: Un cliente deberá poder pedir que se borren sus datos y su memoria (derecho de supresión).
 
+### 3.7 Planes y modo menús (PLAN, BAS)
+
+El producto se vende en dos planes. Las reglas de negocio (§3.2–3.5) son las mismas en ambos; cambia cómo se habla con el sistema.
+
+| | Plan **Básico** | Plan **IA** |
+|---|---|---|
+| Menús y botones de WhatsApp | ✅ | ✅ |
+| Texto libre ("cámbiame lo del martes al jueves") | ❌ se responde con el menú | ✅ lo entiende la IA |
+| Memoria de preferencias, campañas redactadas, varias peticiones en un mensaje | ❌ | ✅ |
+| Recordatorios, lista de espera, impagos, cumpleaños, informe semanal (cron) | ✅ | ✅ |
+| Coste de IA por mensaje | 0 | Solo cuando se escribe texto libre |
+
+- **RF-PLAN-001**: El plan de cada estudio se configura en `estudio.toml` (`[estudio] plan = "basico" | "ia"`).
+- **RF-PLAN-002**: En el plan IA, las pulsaciones de botones y listas las resuelve el motor de menús **sin llamar a la IA**. Solo el texto libre pasa al orquestador.
+- **RF-PLAN-003**: En los dos planes, escribir `MENÚ` (o `MENU`) muestra el menú principal.
+- **RF-BAS-001**: El menú principal se adapta al rol:
+  - **Contacto nuevo**: información, precios, clase de prueba/alta y hablar con el estudio.
+  - **Cliente**: reservar, mis reservas (cancelar), mi bono, comprar bono y hablar con el estudio.
+  - **Instructor**: mis clases de hoy y mañana (asistentes y asistencia).
+  - **Admin**: lo del instructor, más cancelar una clase, la caja de hoy, el informe semanal y los clientes inactivos.
+- **RF-BAS-002**: Reservar se hace por pasos: día (próximos 7 días con plazas) → clase → reserva. Si la clase está llena, se ofrece apuntarse a la lista de espera.
+- **RF-BAS-003**: Antes de cancelar se muestra la política (si se devuelve la sesión o no) y se pide confirmar con un botón.
+- **RF-BAS-004**: El alta de un contacto nuevo pide el nombre por texto y después dos botones: privacidad (obligatoria) y promociones (opcional). Los datos de salud no se piden en el plan Básico.
+- **RF-BAS-005**: Palabras clave en el plan Básico: `BAJA` (promociones), `SÍ` (acepta una plaza ofrecida o confirma la acción pendiente) y `NO`. Cualquier otro texto libre muestra el menú con un aviso breve.
+- **RF-BAS-006**: Las acciones con confirmación (diseño §7) se confirman con botones `✅ Confirmar` / `❌ Cancelar`.
+- **RF-BAS-007**: En el plan Básico, los pagos manuales, las devoluciones y las campañas no están disponibles por WhatsApp (en v2 irán en el panel web). Pedirlos deriva al admin.
+
 ## 4. Requisitos no funcionales
 
 - **RNF-REN-001**: Tiempo de respuesta p95 inferior a 15 s por mensaje (WhatsApp tolera latencia, pero no silencios largos).
@@ -100,7 +127,7 @@ Todavía no hay un estudio concreto como cliente, así que el producto es **gen�
 - **RF-GEN-001**: Todo lo que es propio de un estudio (nombre, tono, horarios, tipos de clase, aforos, catálogo de bonos, precios, políticas de cancelación y lista de espera, recordatorios, FAQ) se define en `config/estudio.toml` y se carga en la base de datos con `seed`.
 - **RF-GEN-002**: Los pagos, la facturación, la mensajería y la transcripción de audio se integran mediante **adaptadores** con una interfaz común. Cada uno tiene una implementación `fake` para desarrollo y evals.
 - **RF-GEN-003**: Todas las tablas de negocio llevan `estudio_id`. En v1 hay **un estudio por despliegue** (marca blanca), pero el esquema queda listo para un SaaS con varios estudios en v2.
-- **RF-GEN-004**: El canal es un adaptador: `whatsapp` (Meta Cloud API) en producción y `consola` para pruebas locales.
+- **RF-GEN-004**: El canal es un adaptador: `whatsapp` (Meta Cloud API) en producción y `consola` para pruebas locales. Los dos soportan texto, plantillas, botones (máx. 3) y listas (máx. 10 opciones).
 
 | # | Decisión pendiente para cada estudio | Solución genérica en v1 |
 |---|---|---|
