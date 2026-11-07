@@ -392,3 +392,27 @@ class EnvioProgramado(Base):
     estudio_id: Mapped[int] = mapped_column(ForeignKey("estudio.id"), index=True)
     clave: Mapped[str] = mapped_column(String(200))
     creado_en: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class CodigoAcceso(Base):
+    """Código de un solo uso para entrar en el panel (RF-PAN-001). Se guarda con hash."""
+
+    __tablename__ = "codigos_acceso"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    staff_id: Mapped[int] = mapped_column(ForeignKey("staff.id"), index=True)
+    codigo_hash: Mapped[str] = mapped_column(String(64))
+    expira_en: Mapped[datetime]
+    intentos: Mapped[int] = mapped_column(Integer, default=0)
+    usado: Mapped[bool] = mapped_column(Boolean, default=False)
+    creado_en: Mapped[datetime]
+
+
+class SesionPanel(Base):
+    """Sesión del panel web (RNF-SEG-004). Solo se guarda el hash del token."""
+
+    __tablename__ = "sesiones_panel"
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    staff_id: Mapped[int] = mapped_column(ForeignKey("staff.id"), index=True)
+    expira_en: Mapped[datetime]
+    creado_en: Mapped[datetime]
+    ultimo_uso_en: Mapped[datetime | None]

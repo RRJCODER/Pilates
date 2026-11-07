@@ -53,15 +53,17 @@ Cada tarea cita los requisitos que cubre. Una fase no empieza hasta que la anter
 - [ ] T7.5 ⏳ Alta en Meta (número de prueba) y despliegue. *Lo hace el usuario.*
 - [ ] T7.6 ⏳ Lanzar los evals con `ANTHROPIC_API_KEY` y ajustar los prompts (= T3.3).
 
-## Fase 8: Panel web del estudio (propuesta, pendiente de aprobar)
-- [ ] T8.1 Aprobar los specs: RF-PAN-*, RNF-SEG-004/005, diseño §12 y escenarios E-PAN-*.
-- [ ] T8.2 Tablas `codigos_acceso` y `sesiones_panel` con su migración; ajustes `PANEL_*` en `config/settings.py`.
-- [ ] T8.3 `app/panel/acceso.py`: código por WhatsApp (plantilla `codigo_acceso`), sesión, CSRF y límites (E-PAN-01, E-PAN-02).
-- [ ] T8.4 Agenda y ficha de clase con asistencia (E-PAN-03, E-PAN-04).
-- [ ] T8.5 Gestión de clases y fichas de clientes (RF-PAN-004/005).
-- [ ] T8.6 Caja, pagos manuales y devoluciones con confirmación (E-PAN-05).
-- [ ] T8.7 Campañas, conversaciones derivadas e informes (RF-PAN-007/008/009, E-PAN-06).
-- [ ] T8.8 Modo demo en el panel (RF-PAN-011) y guía en `docs/`.
+## Fase 8: Panel web del estudio
+- [x] T8.1 Aprobar los specs: RF-PAN-*, RNF-SEG-004/005, diseño §12 y escenarios E-PAN-*.
+- [x] T8.2 Tablas `codigos_acceso` y `sesiones_panel` con su migración; ajustes `PANEL_*` en `config/settings.py`.
+- [x] T8.3 `app/panel/acceso.py`: código por WhatsApp (plantilla `codigo_acceso`), sesión, CSRF y límites (E-PAN-01, E-PAN-02).
+- [x] T8.4 Agenda y ficha de clase con asistencia (E-PAN-03, E-PAN-04).
+- [x] T8.5 Gestión de clases y fichas de clientes (RF-PAN-004/005).
+- [x] T8.6 Caja, pagos manuales y devoluciones con confirmación (E-PAN-05).
+- [x] T8.7 Campañas, conversaciones derivadas e informes (RF-PAN-007/008/009, E-PAN-06).
+- [x] T8.8 Modo demo en el panel (RF-PAN-011) y guía en el README.
+- [x] T8.9 Simulador de WhatsApp en el navegador para probar en local (RF-PAN-012, E-PAN-07).
+- [ ] T8.10 Botón "Proponer texto" con IA en campañas (RF-PAN-007, pendiente).
 
 ## Fase 5: Puesta en marcha
 - [ ] T5.1 📄 *Guía en `docs/puesta-en-marcha.md`.* Alta en Meta Business, número nuevo y aprobación de plantillas (Q4).

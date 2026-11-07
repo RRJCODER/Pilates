@@ -19,6 +19,50 @@ from config.settings import get_settings
 log = logging.getLogger(__name__)
 app = FastAPI(title="Pilates · agente de IA")
 
+# ------------------------------------------------------------------ panel web (RF-PAN-*)
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+from app.panel import rutas as panel_rutas  # noqa: E402
+from app.servicios.base import SinPermiso  # noqa: E402
+
+app.include_router(panel_rutas.router)
+app.include_router(panel_rutas.simulador)
+app.mount("/panel/estaticos", StaticFiles(directory=panel_rutas.DIR / "estaticos"),
+          name="panel_estaticos")
+
+if get_settings().canal == "consola":  # RF-PAN-012: el simulador recoge lo que se envía
+    from app.integraciones.canal import set_canal  # noqa: E402
+    from app.panel.simulador import CanalWeb  # noqa: E402
+
+    set_canal(CanalWeb())
+
+
+@app.exception_handler(panel_rutas.SinSesion)
+def _sin_sesion(request: Request, exc: Exception) -> Response:
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse("/panel/entrar", status_code=303)
+
+
+@app.exception_handler(SinPermiso)
+def _sin_permiso(request: Request, exc: Exception) -> Response:
+    return panel_rutas.plantillas.TemplateResponse(
+        request, "error.html", {"titulo": "Sin permiso", "mensaje": str(exc)}, status_code=403)
+
+
+@app.exception_handler(NoEncontrado)
+def _no_encontrado(request: Request, exc: Exception) -> Response:
+    return panel_rutas.plantillas.TemplateResponse(
+        request, "error.html", {"titulo": "No encontrado", "mensaje": str(exc)}, status_code=404)
+
+
+@app.get("/", include_in_schema=False)
+def inicio() -> Response:
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse("/panel", status_code=307)
+
 
 @app.get("/salud")
 def salud() -> dict[str, str]:

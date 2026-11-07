@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% set seccion = 'clientes' %}{% block titulo %}Clientes{% endblock %}
+{% block contenido %}
+<h1>Clientes</h1>
+<form method="get" class="buscador">
+  <input name="q" value="{{ q }}" placeholder="Nombre, teléfono o email" autofocus>
+  <button class="btn">Buscar</button>
+</form>
+<div class="tarjeta">
+{% if encontrados %}
+  <ul class="lista">
+  {% for c in encontrados %}
+    <li><a href="/panel/clientes/{{ c.cliente_id }}"><strong>{{ c.nombre }}</strong><span class="suave">{{ c.telefono }} · {{ c.nivel or 'sin nivel' }}</span></a></li>
+  {% endfor %}
+  </ul>
+  {% if not q %}<p class="pista">Se muestran los 10 primeros. Escribe para buscar.</p>{% endif %}
+{% else %}
+  <p class="vacio">No hay nadie que coincida con «{{ q }}».</p>
+{% endif %}
+</div>
+{% endblock %}

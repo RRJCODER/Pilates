@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block titulo %}Código{% endblock %}{% block clase_main %}estrecho{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <h1>Revisa tu WhatsApp</h1>
+  <p class="suave">Si <strong>{{ tel }}</strong> es del equipo del estudio, te hemos enviado un código de 6 cifras. Caduca en 10 minutos.</p>
+  <form method="post" action="/panel/codigo" class="formulario">
+    <input type="hidden" name="telefono" value="{{ tel }}">
+    <label>Código
+      <input name="codigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus class="codigo">
+    </label>
+    <button class="btn">Entrar</button>
+  </form>
+  <p><a href="/panel/entrar">Pedir otro código</a></p>
+  {% if consola %}<p class="pista">Modo local: <a href="/dev/chat?tel={{ tel|urlencode }}" target="_blank">ver el código en el simulador</a>.</p>{% endif %}
+</div>
+{% endblock %}

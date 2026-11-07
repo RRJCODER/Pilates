@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% set seccion = 'informes' %}{% block titulo %}Informes{% endblock %}
+{% block contenido %}
+<h1>Informe semanal <span class="suave">{{ informe.semana }}</span></h1>
+<div class="cifras">
+  <div class="cifra"><span>Clases</span><strong>{{ informe.clases }}</strong></div>
+  <div class="cifra"><span>Ocupación media</span><strong>{{ informe.ocupacion_media_pct }}%</strong></div>
+  <div class="cifra"><span>Altas</span><strong>{{ informe.altas }}</strong></div>
+  <div class="cifra"><span>Ingresos</span><strong>{{ '%.2f'|format(informe.ingresos_eur) }} €</strong></div>
+  <div class="cifra"><span>En riesgo</span><strong>{{ informe.clientes_en_riesgo }}</strong></div>
+</div>
+<div class="rejilla">
+  <div class="tarjeta">
+    <h2>Ocupación por franja</h2>
+    {% for franja, pct in informe.ocupacion_por_franja_pct.items() %}
+      <div class="franja"><span>{{ franja|capitalize }}</span><span class="barra-ocu grande"><span style="width: {{ pct }}%"></span></span><strong>{{ pct }}%</strong></div>
+    {% else %}<p class="vacio">No hubo clases la semana pasada.</p>{% endfor %}
+  </div>
+  <div class="tarjeta">
+    <h2>Sin venir desde hace {{ dias }}+ días ({{ inactivos|length }})</h2>
+    {% if inactivos %}<ul class="lista compacta">
+    {% for c in inactivos %}<li><a href="/panel/clientes/{{ c.cliente_id }}"><strong>{{ c.nombre }}</strong> <span class="suave">última clase: {{ c.ultima_clase or 'nunca' }}{% if c.consent_marketing %} · acepta promociones{% endif %}</span></a></li>{% endfor %}
+    </ul>
+    <p><a class="btn sec" href="/panel/campanas?inactivos={{ dias }}">Escribirles una campaña</a></p>
+    {% else %}<p class="vacio">Nadie lleva tanto tiempo sin venir. 🎉</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

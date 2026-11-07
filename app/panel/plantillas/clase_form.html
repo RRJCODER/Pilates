@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% set seccion = 'agenda' %}{% block titulo %}{{ 'Editar clase' if clase else 'Nueva clase' }}{% endblock %}{% block clase_main %}estrecho{% endblock %}
+{% block contenido %}
+<p><a href="{{ '/panel/clases/%d'|format(clase.clase_id) if clase else '/panel' }}">← Volver</a></p>
+<div class="tarjeta">
+  <h1>{{ 'Editar ' ~ clase.clase if clase else 'Nueva clase' }}</h1>
+  <form method="post" class="formulario">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if not clase %}
+    <label>Tipo de clase
+      <select name="tipo" required>
+        {% for t in opciones.tipos %}<option value="{{ t.clave }}">{{ t.nombre }} ({{ t.duracion_min }} min, {{ t.aforo }} plazas)</option>{% endfor %}
+      </select>
+    </label>
+    {% endif %}
+    <div class="dos">
+      <label>Fecha<input type="date" name="fecha" value="{{ fecha }}" required></label>
+      <label>Hora<input type="time" name="hora" value="{{ clase.hora if clase else '19:00' }}" required></label>
+    </div>
+    <label>Instructor/a
+      <select name="instructor" required>
+        {% for n in opciones.instructores %}<option {{ 'selected' if clase and clase.instructor == n }}>{{ n }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Aforo <span class="suave">(vacío = el del tipo de clase)</span><input type="number" name="aforo" min="1" max="60" value="{{ clase.aforo if clase else '' }}"></label>
+    <button class="btn">{{ 'Guardar cambios' if clase else 'Crear clase' }}</button>
+    {% if clase %}<p class="pista">Si cambias la hora o el instructor, avisaremos por WhatsApp a quien esté apuntado.</p>{% endif %}
+  </form>
+</div>
+{% endblock %}

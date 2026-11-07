@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% set seccion = 'conversaciones' %}{% block titulo %}{{ conv.nombre }}{% endblock %}
+{% block contenido %}
+<p><a href="/panel/conversaciones">← Conversaciones</a></p>
+<div class="barra">
+  <div><h1>{{ conv.nombre }}</h1><p class="suave">{{ conv.telefono }}{% if conv.cliente_id %} · <a href="/panel/clientes/{{ conv.cliente_id }}">ver ficha</a>{% endif %}</p></div>
+  {% if conv.humano %}
+  <form method="post" action="/panel/conversaciones/{{ conv.conversacion_id }}/reactivar" class="acciones">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <span class="etiqueta">🙋 La atiende una persona{% if conv.humano_hasta %} hasta las {{ conv.humano_hasta }}{% endif %}</span>
+    <button class="btn sec">Devolver al asistente</button>
+  </form>
+  {% else %}<span class="etiqueta gris">🤖 La atiende el asistente</span>{% endif %}
+</div>
+<div class="chat">
+  {% for m in conv.mensajes %}
+  <div class="burbuja {{ 'suya' if m.rol == 'user' else 'nuestra' }}"><div class="txt">{{ m.texto|whatsapp }}</div><span class="hora">{{ m.hora }}</span></div>
+  {% else %}<p class="vacio">Sin mensajes.</p>{% endfor %}
+</div>
+{% if not demo %}
+<form method="post" action="/panel/conversaciones/{{ conv.conversacion_id }}/responder" class="redactar">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <textarea name="texto" rows="2" placeholder="Escribe tu respuesta… (le llega por WhatsApp)" required></textarea>
+  <button class="btn">Enviar</button>
+</form>
+{% endif %}
+{% endblock %}

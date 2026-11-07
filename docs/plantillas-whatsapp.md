@@ -16,6 +16,7 @@ Cada estudio tiene que crear estas plantillas en *WhatsApp Manager → Plantilla
 | `cumpleanos` | Marketing | 1 nombre | 🎂 ¡Feliz cumpleaños, {{1}}! Todo el equipo te desea un día genial. |
 | `campana_generica` | Marketing | 1 nombre · 2 texto | Hola {{1}} 👋 {{2}} (Responde BAJA para no recibir más promociones) |
 | `informe_semanal` | Utilidad | 1 informe | {{1}} |
+| `codigo_acceso` | Autenticación | 1 código | {{1}} es tu código para entrar en el panel del estudio. Caduca en 10 minutos. No lo compartas. |
 
 Notas:
 - Las plantillas de **marketing** solo se envían a quien tiene `consent_marketing` (RF-MKT-005).

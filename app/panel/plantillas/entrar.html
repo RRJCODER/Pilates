@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block titulo %}Entrar{% endblock %}{% block clase_main %}estrecho{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <h1>🧘 {{ estudio }}</h1>
+  <p class="suave">Panel del equipo. Escribe tu teléfono y te enviaremos un código por WhatsApp.</p>
+  <form method="post" action="/panel/entrar" class="formulario">
+    <label>Teléfono
+      <input name="telefono" type="tel" inputmode="tel" placeholder="+34 600 000 000" required autofocus>
+    </label>
+    <button class="btn">Enviarme el código</button>
+  </form>
+  {% if consola %}<p class="pista">Modo local: el código llega al <a href="/dev/chat" target="_blank">simulador de WhatsApp</a>. Prueba con +34600000001 (admin) o +34600000002 (instructora).</p>{% endif %}
+</div>
+{% endblock %}

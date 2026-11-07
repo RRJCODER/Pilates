@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% set seccion = 'agenda' %}{% block titulo %}Agenda{% endblock %}
+{% block contenido %}
+<div class="barra">
+  <h1>Semana del {{ lunes.strftime('%d/%m') }}</h1>
+  <div class="acciones">
+    <a class="btn sec" href="/panel?semana={{ anterior }}">← Anterior</a>
+    <a class="btn sec" href="/panel">Hoy</a>
+    <a class="btn sec" href="/panel?semana={{ siguiente }}">Siguiente →</a>
+    {% if es_admin %}<a class="btn" href="/panel/clases/nueva">+ Nueva clase</a>{% endif %}
+  </div>
+</div>
+{% if not es_admin %}<p class="suave">Ves solo tus clases.</p>{% endif %}
+<div class="semana">
+{% for d in dias %}
+  <section class="dia {{ 'hoy' if d.fecha == hoy }} {{ 'sin-clases' if not d.clases }}">
+    <h2>{{ d.nombre }}</h2>
+    {% for c in d.clases %}
+      <a class="clase {{ 'cancelada' if c.cancelada }} {{ 'pasada' if c.pasada }} {{ 'llena' if c.ocupadas >= c.aforo and not c.cancelada }}" href="/panel/clases/{{ c.clase_id }}">
+        <span class="hora">{{ c.hora }}</span>
+        <span class="nombre">{{ c.clase }}</span>
+        <span class="meta">{{ c.instructor }}</span>
+        {% if c.cancelada %}<span class="etiqueta gris">Cancelada</span>
+        {% else %}
+        <span class="ocupacion"><span class="barra-ocu"><span style="width: {{ (100 * c.ocupadas / c.aforo)|round|int if c.aforo else 0 }}%"></span></span>{{ c.ocupadas }}/{{ c.aforo }}</span>
+        {% if c.espera %}<span class="etiqueta">{{ c.espera }} en espera</span>{% endif %}
+        {% endif %}
+      </a>
+    {% else %}
+      <p class="vacio">Sin clases</p>
+    {% endfor %}
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

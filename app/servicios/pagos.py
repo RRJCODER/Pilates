@@ -136,7 +136,8 @@ def registrar_pago_manual(s: Session, ctx: Contexto, cliente_id: int, producto: 
     if cli is None or cli.estudio_id != ctx.estudio_id:
         raise NoEncontrado("No encuentro ese cliente.")
     prod = producto_por_clave(s, ctx.estudio_id, producto)
-    importe = Decimal(str(importe_eur)) if importe_eur is not None else prod.precio
+    importe = (Decimal(str(importe_eur)).quantize(Decimal("0.01")) if importe_eur is not None
+               else prod.precio)
     return crear_accion(s, ctx, "pago_manual",
                         f"Registrar pago de {importe} € en {metodo} de {cli.nombre} por "
                         f"{prod.nombre} y activarlo",

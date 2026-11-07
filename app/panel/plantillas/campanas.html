@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% set seccion = 'campanas' %}{% block titulo %}Campañas{% endblock %}
+{% block contenido %}
+<h1>Campañas</h1>
+<div class="rejilla ancha">
+  <div class="tarjeta">
+    <h2>1. ¿A quién?</h2>
+    <form method="get" class="formulario">
+      <div class="dos">
+        <label>Nivel<select name="nivel">
+          <option value="">Todos</option>
+          {% for n in ['inicial', 'intermedio', 'avanzado'] %}<option {{ 'selected' if f.nivel == n }}>{{ n }}</option>{% endfor %}
+        </select></label>
+        <label>Modalidad<select name="modalidad">
+          <option value="">Todas</option>
+          {% for m in ['reformer', 'suelo'] %}<option {{ 'selected' if f.modalidad == m }}>{{ m }}</option>{% endfor %}
+        </select></label>
+      </div>
+      <div class="dos">
+        <label>Bono<select name="bono">
+          <option value="">Da igual</option><option value="si" {{ 'selected' if f.bono == 'si' }}>Con bono activo</option><option value="no" {{ 'selected' if f.bono == 'no' }}>Sin bono activo</option>
+        </select></label>
+        <label>Sin venir desde hace (días)<input name="inactivos" inputmode="numeric" value="{{ f.inactivos }}" placeholder="p. ej. 21"></label>
+      </div>
+      <button class="btn sec">Contar</button>
+    </form>
+    <p class="cuenta"><strong>{{ seg.total }}</strong> personas con este filtro aceptan promociones.</p>
+  </div>
+  <div class="tarjeta">
+    <h2>2. ¿Qué les decimos?</h2>
+    <form method="post" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      {% for k, v in f.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      <textarea name="texto" rows="5" maxlength="900" placeholder="Ej.: ¡Este sábado taller de reformer para principiantes! Plazas limitadas, responde para apuntarte." required></textarea>
+      <button class="btn" {{ 'disabled' if not seg.total }}>Enviar a {{ seg.total }} personas…</button>
+      <p class="pista">Se añade «Responde BAJA para no recibir más promociones». Te pediremos confirmación{% if demo %}; en la demo no se envía de verdad{% endif %}.</p>
+    </form>
+  </div>
+</div>
+<div class="tarjeta">
+  <h2>Últimas campañas</h2>
+  {% for c in anteriores %}<p><span class="etiqueta">{{ c.estado }}</span> {{ c.texto[:120] }} <span class="suave">· {{ c.total }} personas{% if c.enviada %} · {{ c.enviada }}{% endif %}</span></p>
+  {% else %}<p class="vacio">Todavía no hay campañas.</p>{% endfor %}
+</div>
+{% endblock %}

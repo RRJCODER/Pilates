@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% set seccion = 'conversaciones' %}{% block titulo %}Conversaciones{% endblock %}
+{% block contenido %}
+<h1>Conversaciones</h1>
+<div class="tarjeta">
+  <h2>🙋 Esperan a una persona ({{ derivadas|length }})</h2>
+  {% if derivadas %}<ul class="lista">
+  {% for c in derivadas %}<li><a href="/panel/conversaciones/{{ c.conversacion_id }}"><strong>{{ c.nombre }}</strong> <span class="suave">{{ c.telefono }} · {{ c.cuando }}</span><span class="extracto">{{ c.ultimo }}</span></a></li>{% endfor %}
+  </ul>{% else %}<p class="vacio">Nadie está esperando. 🎉</p>{% endif %}
+</div>
+<div class="tarjeta">
+  <h2>Recientes</h2>
+  {% if recientes %}<ul class="lista">
+  {% for c in recientes %}<li><a href="/panel/conversaciones/{{ c.conversacion_id }}"><strong>{{ c.nombre }}</strong> <span class="suave">{{ c.telefono }} · {{ c.cuando }}</span><span class="extracto">{{ c.ultimo }}</span></a></li>{% endfor %}
+  </ul>{% else %}<p class="vacio">Todavía no hay conversaciones.</p>{% endif %}
+</div>
+{% endblock %}

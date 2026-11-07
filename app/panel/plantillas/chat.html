@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de WhatsApp</title><link rel="stylesheet" href="/panel/estaticos/panel.css"></head>
+<body class="sim">
+<main class="contenido estrecho">
+  <div class="sim-cabecera">
+    <h1>💬 Simulador de WhatsApp</h1>
+    <p class="suave">Solo en local (CANAL=consola). Escribe como si fueras esta persona; los botones se pulsan aquí. <a href="/panel" target="_blank">Abrir el panel</a></p>
+    <form method="get" class="buscador">
+      <select name="tel" onchange="this.form.submit()">
+        <option value="">— Elige quién escribe —</option>
+        <optgroup label="Equipo">{% for t, n in staff %}<option value="{{ t }}" {{ 'selected' if t == tel }}>{{ n }} ({{ t }})</option>{% endfor %}</optgroup>
+        <optgroup label="Clientes">{% for t, n in clientes %}<option value="{{ t }}" {{ 'selected' if t == tel }}>{{ n }} ({{ t }})</option>{% endfor %}</optgroup>
+      </select>
+      <input name="otro" placeholder="u otro número: +34 6…" value="">
+      <button class="btn sec">Cambiar</button>
+    </form>
+  </div>
+  {% if tel %}
+  <div class="telefono">
+    <div class="tel-cabecera">{{ tel }}</div>
+    <div class="chat wa">
+      {% for b in burbujas %}
+      <div class="burbuja {{ 'mia' if b.de_mi else 'estudio' }}">
+        <div class="txt">{{ b.texto|whatsapp }}</div><span class="hora">{{ b.hora }}</span>
+        {% if b.opciones and loop.last %}
+        <div class="opciones">
+          {% for id, titulo in b.opciones %}
+          <form method="post"><input type="hidden" name="tel" value="{{ tel }}"><input type="hidden" name="respuesta_id" value="{{ id }}"><input type="hidden" name="texto" value="{{ titulo }}"><button>{{ titulo }}</button></form>
+          {% endfor %}
+        </div>
+        {% elif b.opciones %}<div class="opciones viejas">{% for id, titulo in b.opciones %}<span>{{ titulo }}</span>{% endfor %}</div>{% endif %}
+      </div>
+      {% else %}<p class="vacio">Escribe «menú» u «hola» para empezar.</p>{% endfor %}
+      <span id="fin"></span>
+    </div>
+    <form method="post" class="redactar">
+      <input type="hidden" name="tel" value="{{ tel }}">
+      <input name="texto" placeholder="Mensaje" autocomplete="off" autofocus>
+      <button class="btn">Enviar</button>
+    </form>
+  </div>
+  {% endif %}
+</main>
+</body></html>

@@ -38,6 +38,31 @@ python -m app.db.seed --demo-clientes 30
 python -m app.chat --como +34600000001     # hablar como admin (escribe el número para pulsar un botón)
 ```
 
+## Panel web del estudio
+
+La dueña y las instructoras tienen un panel web (RF-PAN-*, diseño §12) que funciona en el móvil y en el ordenador, y **no usa IA**:
+
+| Pantalla | Quién | Qué se hace |
+|---|---|---|
+| Agenda | admin: todas · instructora: las suyas | Semana de clases, ocupación, lista de espera y pasar lista |
+| Clientes | admin e instructoras | Buscador y ficha: bono, reservas, notas internas (y pagos, solo admin) |
+| Caja | admin | Caja del día, la semana y el mes; pagos en efectivo y devoluciones con confirmación |
+| Campañas | admin | Segmento, texto y envío con confirmación (solo a quien acepta promociones) |
+| Conversaciones | admin | Contestar a quien pidió hablar con una persona y devolverle el asistente |
+| Informes | admin | Informe semanal y clientes inactivos |
+
+Se entra en `/panel` con el teléfono y un código de 6 cifras que llega por WhatsApp.
+
+**Probarlo en local** (gratis: sin `ANTHROPIC_API_KEY` funciona con menús, sin IA):
+
+```bash
+python -m app.db.seed --demo-clientes 30 --demo-reservas
+uvicorn app.main:app --reload
+```
+
+- Panel: <http://localhost:8000/panel>, entra con `+34600000001` (admin) o `+34600000002` (instructora).
+- Simulador de WhatsApp: <http://localhost:8000/dev/chat>. Ahí llega el código del panel y puedes escribir como cualquier clienta (solo existe con `CANAL=consola`).
+
 ## Tests
 
 ```bash
@@ -48,6 +73,6 @@ ANTHROPIC_API_KEY=... pytest tests/evals -s # evals con Claude real (cuestan din
 
 ## Estado
 
-Las fases 0 a 4 están implementadas y probadas: servicios, agentes, memoria, WhatsApp, pagos y cron. Falta:
+Las fases 0 a 4, 6, 7 y 8 están implementadas y probadas: servicios, agentes, memoria, WhatsApp, pagos, cron, planes, demo y panel web. Falta:
 - **T3.3**: lanzar los evals con una API key real para medir la latencia y el coste.
 - **Fase 5**: dar de alta en Meta, desplegar y hacer el piloto con un estudio real (guía en `docs/`).

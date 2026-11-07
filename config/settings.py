@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     # Modo demo (RF-DEMO-*): NUNCA en un estudio real
     demo: bool = False
 
+    # Panel web del staff (RF-PAN-001, RNF-SEG-004)
+    panel_sesion_horas: int = 12
+    panel_codigo_minutos: int = 10
+
     @field_validator("database_url")
     @classmethod
     def _driver_psycopg(cls, v: str) -> str:

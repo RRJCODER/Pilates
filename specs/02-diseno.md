@@ -275,11 +275,9 @@ mensaje entrante
 - **Historial**: se guardan tanto la opción elegida (su título) como lo que responde el menú, así que si el estudio tiene plan IA, la IA tiene contexto cuando alguien pasa a escribir.
 - El motor llama a los **mismos servicios** que los subagentes, con el mismo `Contexto` y los mismos `@requiere_rol`.
 
-## 12. Panel web del estudio (RF-PAN-*) — propuesta
+## 12. Panel web del estudio (RF-PAN-*)
 
-> **Estado: propuesta pendiente de aprobar.**
-
-**Tecnología.** Páginas renderizadas en el servidor con **FastAPI + Jinja2**, y **HTMX** para las acciones pequeñas (marcar asistencia, filtrar) sin recargar la página. No hay paso de build ni framework de JavaScript, y se despliega con el mismo contenedor `web`. Dependencias nuevas: `jinja2` y `python-multipart`. HTMX se sirve como archivo estático del repo.
+**Tecnología.** Páginas renderizadas en el servidor con **FastAPI + Jinja2** y formularios HTML normales (POST y redirección). No hay JavaScript, paso de build ni framework de frontend, y se despliega con el mismo contenedor `web`. Dependencias nuevas: `jinja2` y `python-multipart`. Un único CSS con tema claro y oscuro, pensado primero para el móvil.
 
 **Acceso (RF-PAN-001, RNF-SEG-004).**
 
@@ -289,12 +287,15 @@ mensaje entrante
 /panel/codigo  ── código ──► ¿hash correcto, sin caducar, < 5 intentos? ──► cookie de sesión (12 h)
 ```
 
-- Con `CANAL=consola`, el código se imprime en la terminal, para probarlo en local.
+- Con `CANAL=consola`, el código llega al simulador de WhatsApp (`/dev/chat`, RF-PAN-012) y se imprime en la terminal.
+- El código se envía directamente por el canal, sin pasar por `entregar`, para que no quede guardado en el historial de mensajes.
 - Tablas nuevas:
   ```
   codigos_acceso(id, staff_id, codigo_hash, expira_en, intentos, usado, creado_en)
   sesiones_panel(token_hash PK, staff_id, expira_en, creado_en, ultimo_uso_en)
   ```
+  No llevan `estudio_id` (RF-GEN-003) porque cuelgan de `staff`, que ya lo lleva.
+- El token CSRF se deriva del token de sesión (`sha256("csrf:" + token)`), así que no hace falta guardarlo.
 - Cada petición busca la sesión, comprueba que el staff sigue activo y construye un `Contexto(rol=ADMIN|INSTRUCTOR, staff_id, telefono)`. Desde ahí todo pasa por los servicios con `@requiere_rol` (RF-PAN-010).
 
 **Páginas.**
@@ -309,6 +310,9 @@ mensaje entrante
 | `/panel/campanas` | admin | `segmentar`, `borrador_campana`, `enviar_campana` ✋ | RF-PAN-007 |
 | `/panel/conversaciones` | admin | historial y modo humano (§8) | RF-PAN-008 |
 | `/panel/informes` | admin | `informe_semanal`, `clientes_inactivos` | RF-PAN-009 |
+| `/dev/chat` (solo `CANAL=consola`) | — | `procesar_mensaje` con el canal `CanalWeb` | RF-PAN-012 |
+
+Las consultas que solo necesita el panel (agenda de la semana, historial de un cliente, movimientos de caja, conversaciones) están en `app/servicios/panel.py`, también con `@requiere_rol`.
 
 **Confirmaciones (§7).** Las acciones ✋ funcionan igual que en WhatsApp: el servicio crea la fila en `acciones_pendientes` con `quien_confirma` = teléfono del staff, y el panel muestra una pantalla de confirmación con el resumen y los botones *Confirmar* / *Cancelar*. *Confirmar* llama a `confirmar_accion(codigo)`, que vuelve a comprobar el remitente y la caducidad.
 
@@ -320,10 +324,11 @@ mensaje entrante
 
 ```
 app/panel/
-├── rutas.py        ← APIRouter montado en /panel
-├── acceso.py       ← códigos, sesiones, CSRF y dependencia `staff_actual`
+├── rutas.py        ← APIRouter montado en /panel (y el simulador en /dev)
+├── acceso.py       ← códigos, sesiones y CSRF
+├── simulador.py    ← CanalWeb: canal en memoria para el simulador de WhatsApp
 ├── plantillas/     ← Jinja2 (base.html + una por página)
-└── estaticos/      ← CSS y htmx.min.js
+└── estaticos/      ← panel.css
 ```
 
 ## 11. Estructura del repositorio
@@ -349,7 +354,7 @@ pilates/
 │   │   ├── resumen.py      ← resumen de conversaciones largas
 │   │   └── prompts/        ← un .md por agente
 │   ├── menu/               ← motor de menús y botones (plan Básico y pulsaciones del plan IA)
-│   ├── panel/              ← panel web del staff (§12, propuesta)
+│   ├── panel/              ← panel web del staff y simulador de WhatsApp (§12)
 │   ├── servicios/          ← lógica de negocio pura (testeable sin LLM)
 │   ├── integraciones/      ← canal.py, pagos.py, facturacion.py, stt.py
 │   └── db/                 ← modelos SQLAlchemy, sesión y seed

@@ -115,7 +115,7 @@ Cada escenario es una conversación de prueba. Sirven a la vez de criterio de ac
 - El visitante A se da de alta. El visitante B escribe `DEMO ADMIN` y abre los clientes inactivos, `responder <tel de A> hola` y una campaña.
 - Resultado esperado: B ve el teléfono de A enmascarado, A no recibe nada y B no recibe el aviso del alta de A.
 
-## Panel web (propuesta)
+## Panel web
 
 **E-PAN-01: entrar con código** (RF-PAN-001, RNF-SEG-004)
 - La admin escribe su teléfono en `/panel/entrar`, recibe un código por WhatsApp y lo introduce.
@@ -140,3 +140,7 @@ Cada escenario es una conversación de prueba. Sirven a la vez de criterio de ac
 **E-PAN-06: contestar una conversación derivada** (RF-PAN-008)
 - Marta ha hecho una consulta médica y su conversación está en modo humano. La admin le contesta desde el panel y después pulsa *Devolver al bot*.
 - Resultado esperado: Marta recibe el mensaje por WhatsApp, se guarda en su historial y la conversación vuelve a `estado = bot`.
+
+**E-PAN-07: probar en local con el simulador** (RF-PAN-012)
+- Con `CANAL=consola`, se abre `/dev/chat`, se elige a una clienta y se escribe «hola».
+- Resultado esperado: aparece el menú con sus botones, y pulsarlos funciona igual que en WhatsApp. El código de acceso de la admin también llega ahí.

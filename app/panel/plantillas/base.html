@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Panel{% endblock %} · {{ estudio }}</title>
+  <link rel="stylesheet" href="/panel/estaticos/panel.css">
+</head>
+<body>
+{% if ctx %}
+<header class="cabecera">
+  <a class="marca" href="/panel">🧘 {{ estudio }}</a>
+  <nav class="nav">
+    <a href="/panel" class="{{ 'activo' if seccion == 'agenda' }}">Agenda</a>
+    <a href="/panel/clientes" class="{{ 'activo' if seccion == 'clientes' }}">Clientes</a>
+    {% if es_admin %}
+    <a href="/panel/caja" class="{{ 'activo' if seccion == 'caja' }}">Caja</a>
+    <a href="/panel/campanas" class="{{ 'activo' if seccion == 'campanas' }}">Campañas</a>
+    <a href="/panel/conversaciones" class="{{ 'activo' if seccion == 'conversaciones' }}">Conversaciones</a>
+    <a href="/panel/informes" class="{{ 'activo' if seccion == 'informes' }}">Informes</a>
+    {% endif %}
+  </nav>
+  <form method="post" action="/panel/salir" class="salir">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <span class="quien">{{ ctx.nombre }} · {{ 'admin' if es_admin else 'instructora' }}</span>
+    <button class="btn-enlace">Salir</button>
+  </form>
+</header>
+{% endif %}
+<main class="contenido {% block clase_main %}{% endblock %}">
+  {% if demo %}<p class="aviso info">Modo demo: los teléfonos se muestran enmascarados y no se escribe a otras personas.</p>{% endif %}
+  {% if ok %}<p class="aviso ok">✅ {{ ok }}</p>{% endif %}
+  {% if error %}<p class="aviso error">⚠️ {{ error }}</p>{% endif %}
+  {% block contenido %}{% endblock %}
+</main>
+</body>
+</html>

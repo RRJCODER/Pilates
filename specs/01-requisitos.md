@@ -100,7 +100,7 @@ El producto se vende en dos planes. Las reglas de negocio (§3.2–3.5) son las 
 - **RF-BAS-004**: El alta de un contacto nuevo pide el nombre por texto y después dos botones: privacidad (obligatoria) y promociones (opcional). Los datos de salud no se piden en el plan Básico.
 - **RF-BAS-005**: Palabras clave en el plan Básico: `BAJA` (promociones), `SÍ` (acepta una plaza ofrecida o confirma la acción pendiente) y `NO`. Cualquier otro texto libre muestra el menú con un aviso breve.
 - **RF-BAS-006**: Las acciones con confirmación (diseño §7) se confirman con botones `✅ Confirmar` / `❌ Cancelar`.
-- **RF-BAS-007**: En el plan Básico, los pagos manuales, las devoluciones y las campañas no están disponibles por WhatsApp (en v2 irán en el panel web). Pedirlos deriva al admin. *Propuesta: pasan al panel web (RF-PAN-006/007).*
+- **RF-BAS-007**: En el plan Básico, los pagos manuales, las devoluciones y las campañas no están disponibles por WhatsApp (en v2 irán en el panel web). Pedirlos deriva al admin, que los hace desde el panel web (RF-PAN-006/007).
 
 ### 3.8 Modo demo (DEMO)
 
@@ -118,7 +118,7 @@ Es un despliegue de prueba para enseñar el producto a estudios desde el móvil.
 
 ### 3.9 Panel web del estudio (PAN)
 
-> **Estado: propuesta pendiente de aprobar.** Resuelve la decisión Q3. Hasta que se apruebe, no se implementa nada de esta sección.
+> **Estado: aprobada e implementada** (fase 8). Resuelve la decisión Q3.
 
 Es una web para el **staff** (admin e instructores) que complementa a WhatsApp: lo que en un chat es incómodo (ver la semana entera, buscar una clienta, cuadrar la caja, contestar conversaciones derivadas) se hace en una pantalla. Los clientes y los leads siguen usando solo WhatsApp. Funciona en el móvil y en el ordenador, y **no llama a la IA** (coste 0 en los dos planes).
 
@@ -128,11 +128,12 @@ Es una web para el **staff** (admin e instructores) que complementa a WhatsApp: 
 - **RF-PAN-004** (admin, clases): Deberá permitir crear, mover y cancelar clases (RF-RES-007). Cancelar pide confirmación en pantalla y avisa a las personas apuntadas igual que si se hiciera por WhatsApp.
 - **RF-PAN-005** (clientes): Deberá tener un buscador de clientes y su ficha: bono y sesiones, próximas reservas, historial de asistencia, pagos y notas internas (RF-CLI-006). El staff puede añadir notas internas. La ficha muestra lo mismo que `ficha_cliente`, sin datos de salud si no hay consentimiento.
 - **RF-PAN-006** (admin, cobros): Deberá mostrar la caja del día, la semana y el mes, y permitir registrar pagos en efectivo o por transferencia y hacer devoluciones (RF-COB-005). Las dos acciones piden confirmación (diseño §7). Está disponible **también en el plan Básico** (cierra RF-BAS-007).
-- **RF-PAN-007** (admin, campañas): Deberá permitir elegir un segmento (nivel, inactividad, tipo de bono), ver cuántas personas con consentimiento de marketing lo forman, escribir el texto y enviarlo tras confirmarlo (RF-MKT-004/005). En el plan IA hay un botón opcional "Proponer texto" que usa el subagente de Marketing.
+- **RF-PAN-007** (admin, campañas): Deberá permitir elegir un segmento (nivel, inactividad, tipo de bono), ver cuántas personas con consentimiento de marketing lo forman, escribir el texto y enviarlo tras confirmarlo (RF-MKT-004/005). *Pendiente para más adelante:* en el plan IA, un botón "Proponer texto" que use el subagente de Marketing (es lo único del panel que gastaría IA).
 - **RF-PAN-008** (admin, conversaciones): Deberá listar las conversaciones derivadas a una persona (RF-ORQ-004), mostrar su historial, permitir contestar desde el panel (equivale a `responder +34…`) y devolver el control al bot (equivale a `reactivar +34…`).
 - **RF-PAN-009** (admin, informes): Deberá mostrar el informe semanal (RF-MKT-007) y la lista de clientes inactivos (RF-MKT-002).
 - **RF-PAN-010** (permisos): El panel usa **los mismos servicios** que los agentes y el motor de menús, con un `Contexto` construido a partir del staff que ha iniciado sesión. Los permisos los sigue comprobando `@requiere_rol` (RNF-SEG-002); ocultar un botón no basta.
 - **RF-PAN-011** (demo): Con `DEMO=true`, el panel cumple RF-DEMO-006: teléfonos enmascarados, y contestar conversaciones y enviar campañas desactivados.
+- **RF-PAN-012** (pruebas en local): Con `CANAL=consola`, `/dev/chat` es un **simulador de WhatsApp** en el navegador: se elige quién escribe (staff, cliente o un número nuevo), se ven los menús con sus botones y se reciben los avisos y el código de acceso al panel. Con `CANAL=whatsapp` esa ruta no existe (404).
 
 ## 4. Requisitos no funcionales
 
@@ -141,8 +142,8 @@ Es una web para el **staff** (admin e instructores) que complementa a WhatsApp: 
 - **RNF-SEG-001**: El webhook de WhatsApp debe verificar la firma `X-Hub-Signature-256`.
 - **RNF-SEG-002**: Las herramientas comprueban el rol del remitente en el **código**, no en el prompt. Un cliente no puede ejecutar herramientas de staff aunque se lo pida al modelo.
 - **RNF-SEG-003**: Los secretos (API keys y tokens) van en variables de entorno, nunca en el repo.
-- **RNF-SEG-004** (panel, propuesta): Las sesiones del panel usan una cookie `HttpOnly`, `Secure` y `SameSite=Strict`, y los formularios llevan token CSRF. Como mucho 5 intentos por código y 3 códigos por teléfono cada 15 minutos. Los códigos y los tokens de sesión se guardan con hash, nunca en claro.
-- **RNF-SEG-005** (panel, propuesta): Cada acción del panel queda en la auditoría (`eventos_agente` con `agente = "panel"`), con quién la hizo.
+- **RNF-SEG-004** (panel): Las sesiones del panel usan una cookie `HttpOnly`, `Secure` y `SameSite=Strict`, y los formularios de una sesión iniciada llevan token CSRF. Como mucho 5 intentos por código y 3 códigos por teléfono cada 15 minutos. Los códigos y los tokens de sesión se guardan con hash, nunca en claro.
+- **RNF-SEG-005** (panel): Cada acción del panel queda en la auditoría (`eventos_agente` con `agente = "panel"`), con quién la hizo.
 - **RNF-FIA-001**: Los mensajes de WhatsApp se procesan de forma idempotente (por `message_id`), porque Meta reintenta los envíos.
 - **RNF-FIA-002**: Si Claude o la base de datos fallan, el cliente recibe un mensaje de "ahora mismo no puedo, te escribe alguien del estudio" y se avisa al admin.
 - **RNF-OBS-001**: Cada turno registra los tokens usados, el coste estimado, las herramientas llamadas y la latencia.
@@ -168,7 +169,7 @@ Todavía no hay un estudio concreto como cliente, así que el producto es **gen�
 |---|---|---|
 | Q1 | Proveedor de pagos | `PagosAdapter`: `fake` y `stripe` (Redsys/Bizum como adaptador futuro) |
 | Q2 | Software de facturación | `FacturacionAdapter`: `ninguno` y `holded` (otros como adaptador) |
-| Q3 | Panel web para el admin | Solo WhatsApp y consola en v1. **Propuesta:** panel web para el staff (§3.9, RF-PAN-*) |
+| Q3 | Panel web para el admin | Panel web para el staff (§3.9, RF-PAN-*) |
 | Q4 | Número de WhatsApp | Cada estudio da de alta su propio número en Meta (guía en `docs/`) |
 | Q5 | Catálogo, precios y políticas | Estudio de ejemplo en `config/estudio.toml` |
 | Q6 | Google Calendar | No en v1 |

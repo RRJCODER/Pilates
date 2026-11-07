@@ -1,0 +1,59 @@
+{% extends "base.html" %}{% set seccion = 'caja' %}{% block titulo %}Caja{% endblock %}
+{% block contenido %}
+<div class="barra">
+  <h1>Caja</h1>
+  <div class="acciones pestanas">
+    <a class="{{ 'activo' if periodo == 'dia' }}" href="?periodo=dia">Hoy</a>
+    <a class="{{ 'activo' if periodo == 'semana' }}" href="?periodo=semana">Semana</a>
+    <a class="{{ 'activo' if periodo == 'mes' }}" href="?periodo=mes">Mes</a>
+  </div>
+</div>
+<div class="cifras">
+  <div class="cifra"><span>Cobrado</span><strong>{{ '%.2f'|format(resumen.cobrado_eur) }} €</strong></div>
+  <div class="cifra"><span>Devuelto</span><strong>{{ '%.2f'|format(resumen.devuelto_eur) }} €</strong></div>
+  <div class="cifra"><span>Pendiente</span><strong>{{ '%.2f'|format(resumen.pendiente_eur) }} €</strong></div>
+</div>
+<div class="rejilla ancha">
+  <div class="tarjeta">
+    <h2>Movimientos <span class="suave">({{ resumen.desde }} – {{ resumen.hasta }})</span></h2>
+    {% if pagos %}
+    <table class="tabla">
+      <thead><tr><th>Fecha</th><th>Cliente</th><th>Producto</th><th>Importe</th><th>Método</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+      {% for p in pagos %}
+      <tr>
+        <td data-l="Fecha">{{ p.fecha }}</td>
+        <td data-l="Cliente"><a href="/panel/clientes/{{ p.cliente_id }}">{{ p.cliente }}</a></td>
+        <td data-l="Producto">{{ p.producto }}</td>
+        <td data-l="Importe"><strong>{{ '%.2f'|format(p.importe) }} €</strong></td>
+        <td data-l="Método">{{ p.metodo }}</td>
+        <td data-l="Estado"><span class="etiqueta {{ p.estado }}">{{ p.estado }}</span></td>
+        <td>{% if p.devolvible %}
+          <form method="post" action="/panel/caja/devolver/{{ p.pago_id }}" class="en-linea">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="btn-mini">Devolver…</button>
+          </form>{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="vacio">No hay movimientos en este periodo.</p>{% endif %}
+  </div>
+  <div class="tarjeta">
+    <h2>Registrar un pago en efectivo o transferencia</h2>
+    <form method="post" action="/panel/caja/pago" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label>Cliente<select name="cliente_id" required>
+        {% for c in clientes %}<option value="{{ c.cliente_id }}" {{ 'selected' if cliente_sel == c.cliente_id|string }}>{{ c.nombre }}</option>{% endfor %}
+      </select></label>
+      <label>Producto<select name="producto">{% for p in productos %}<option value="{{ p.clave }}">{{ p.nombre }} · {{ '%.2f'|format(p.precio) }} €</option>{% endfor %}</select></label>
+      <div class="dos">
+        <label>Método<select name="metodo"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select></label>
+        <label>Importe<input name="importe" inputmode="decimal" placeholder="= precio"></label>
+      </div>
+      <button class="btn">Registrar…</button>
+      <p class="pista">Te pediremos confirmación. Al confirmarlo se activa el bono y se avisa a la clienta.</p>
+    </form>
+  </div>
+</div>
+{% endblock %}

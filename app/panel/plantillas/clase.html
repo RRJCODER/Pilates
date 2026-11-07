@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% set seccion = 'agenda' %}{% block titulo %}{{ c.clase }}{% endblock %}
+{% block contenido %}
+<p><a href="/panel?semana={{ c.fecha }}">← Agenda</a></p>
+<div class="barra">
+  <div>
+    <h1>{{ c.clase }}</h1>
+    <p class="suave">{{ c.dia|capitalize }} a las {{ c.hora }} · {{ c.instructor }} · {{ c.plazas_libres }} plazas libres{% if c.estado == 'cancelada' %} · <strong>Cancelada</strong>{% endif %}</p>
+  </div>
+  {% if es_admin and c.estado != 'cancelada' %}<div class="acciones"><a class="btn sec" href="/panel/clases/{{ c.clase_id }}/editar">Editar</a></div>{% endif %}
+</div>
+<div class="tarjeta">
+  <h2>Asistentes ({{ c.asistentes|length }})</h2>
+  {% if c.asistentes %}
+  <table class="tabla">
+    <thead><tr><th>Nombre</th><th>Nivel</th><th>Lesiones</th><th>Asistencia</th></tr></thead>
+    <tbody>
+    {% for a in c.asistentes %}
+      <tr>
+        <td data-l="Nombre">{{ a.cliente }}</td>
+        <td data-l="Nivel">{{ a.nivel or '—' }}</td>
+        <td data-l="Lesiones">{% if a.lesiones %}<span class="etiqueta aviso-lesion">⚠️ {{ a.lesiones|join(', ') }}</span>{% else %}—{% endif %}</td>
+        <td data-l="Asistencia">
+          <form method="post" action="/panel/reservas/{{ a.reserva_id }}/asistencia" class="en-linea">
+            <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="clase_id" value="{{ c.clase_id }}">
+            <button name="asistio" value="1" class="btn-mini {{ 'sel-ok' if a.estado == 'asistio' }}">Vino</button>
+            <button name="asistio" value="0" class="btn-mini {{ 'sel-no' if a.estado == 'falta' }}">Faltó</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="vacio">Todavía no hay nadie apuntado.</p>{% endif %}
+</div>
+{% if es_admin and c.estado != 'cancelada' %}
+<details class="tarjeta peligro">
+  <summary>Cancelar esta clase</summary>
+  <form method="post" action="/panel/clases/{{ c.clase_id }}/cancelar" class="formulario">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label>Motivo (se lo diremos a las personas apuntadas)<input name="motivo" placeholder="p. ej. la instructora está enferma"></label>
+    <button class="btn rojo">Cancelar clase…</button>
+    <p class="pista">Te pediremos confirmación antes de hacerlo.</p>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

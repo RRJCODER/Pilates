@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block titulo %}Confirmar{% endblock %}{% block clase_main %}estrecho{% endblock %}
+{% block contenido %}
+<div class="tarjeta">
+  <h1>¿Confirmas?</h1>
+  <p class="descripcion">{{ accion.descripcion }}</p>
+  {% if accion.estado == 'pendiente' %}
+  <p class="suave">Tienes {{ accion.minutos }} minutos para confirmarlo.</p>
+  <form method="post" class="botones">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="volver" value="{{ volver }}">
+    <button name="decision" value="si" class="btn">✅ Confirmar</button>
+    <button name="decision" value="no" class="btn sec">❌ Cancelar</button>
+  </form>
+  {% else %}
+  <p class="aviso error">Esta acción ya está {{ accion.estado }}.</p>
+  <p><a class="btn sec" href="{{ volver }}">Volver</a></p>
+  {% endif %}
+</div>
+{% endblock %}

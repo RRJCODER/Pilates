@@ -1,0 +1,52 @@
+{% extends "base.html" %}{% set seccion = 'clientes' %}{% block titulo %}{{ f.nombre }}{% endblock %}
+{% block contenido %}
+<p><a href="/panel/clientes">← Clientes</a></p>
+<div class="barra">
+  <div><h1>{{ f.nombre }}</h1>
+  <p class="suave">{{ f.telefono }}{% if f.email %} · {{ f.email }}{% endif %} · nivel {{ f.nivel or '—' }} · {{ f.asistencias }} clases hechas{% if f.consent_marketing %} · acepta promociones{% endif %}</p></div>
+</div>
+<div class="rejilla">
+  <div class="tarjeta">
+    <h2>Bono</h2>
+    {% for b in f.bonos %}
+      <p><strong>{{ b.producto }}</strong> · {{ b.estado }}<br>
+      <span class="suave">{{ b.sesiones_restantes }} de {{ b.sesiones_total }} sesiones · {% if b.caduca %}caduca {{ b.caduca }}{% endif %}</span></p>
+    {% else %}<p class="vacio">Sin bonos.</p>{% endfor %}
+    {% if f.objetivos %}<h2>Objetivos</h2><p>{{ f.objetivos }}</p>{% endif %}
+    {% if f.lesiones %}<h2>Lesiones</h2>{% for l in f.lesiones %}<p class="etiqueta aviso-lesion">⚠️ {{ l }}</p>{% endfor %}{% endif %}
+  </div>
+  <div class="tarjeta">
+    <h2>Próximas clases</h2>
+    {% for r in h.proximas %}<p><a href="/panel/clases/{{ r.clase_id }}">{{ r.clase }}</a> <span class="suave">{{ r.cuando }} · {{ r.estado }}</span></p>
+    {% else %}<p class="vacio">Ninguna.</p>{% endfor %}
+    <h2>Últimas clases</h2>
+    {% for r in h.pasadas %}<p>{{ r.clase }} <span class="suave">{{ r.cuando }} · {{ r.estado }}</span></p>
+    {% else %}<p class="vacio">Ninguna todavía.</p>{% endfor %}
+  </div>
+  <div class="tarjeta">
+    <h2>Notas internas <span class="suave">(la clienta no las ve)</span></h2>
+    {% for n in f.notas_internas %}<p class="nota">{{ n }}</p>{% else %}<p class="vacio">Sin notas.</p>{% endfor %}
+    <form method="post" action="/panel/clientes/{{ f.cliente_id }}/nota" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <textarea name="texto" rows="2" placeholder="Añadir una nota…"></textarea>
+      <button class="btn sec">Guardar nota</button>
+    </form>
+  </div>
+  {% if es_admin %}
+  <div class="tarjeta">
+    <h2>Pagos</h2>
+    {% for p in h.pagos %}<p>{{ p.fecha }} · {{ p.producto }} · <strong>{{ '%.2f'|format(p.importe) }} €</strong> <span class="suave">{{ p.metodo }} · {{ p.estado }}</span></p>
+    {% else %}<p class="vacio">Sin pagos.</p>{% endfor %}
+    <h2>Registrar un pago</h2>
+    <form method="post" action="/panel/caja/pago" class="formulario">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="cliente_id" value="{{ f.cliente_id }}">
+      <input type="hidden" name="volver" value="/panel/clientes/{{ f.cliente_id }}">
+      <select name="producto">{% for p in productos %}<option value="{{ p.clave }}">{{ p.nombre }} · {{ '%.2f'|format(p.precio) }} €</option>{% endfor %}</select>
+      <div class="dos"><select name="metodo"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select>
+      <input name="importe" inputmode="decimal" placeholder="Importe (vacío = precio)"></div>
+      <button class="btn">Registrar…</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

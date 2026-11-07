@@ -30,7 +30,9 @@ def test_seed_carga_estudio_de_ejemplo() -> None:
 
 
 def test_todas_las_tablas_de_negocio_tienen_estudio_id() -> None:
-    sin_estudio = {"estudio", "mensajes", "resumenes", "eventos_agente"}
+    # Las del panel cuelgan de `staff`, que ya lleva estudio_id (diseño §12)
+    sin_estudio = {"estudio", "mensajes", "resumenes", "eventos_agente", "codigos_acceso",
+                   "sesiones_panel"}
     for nombre, tabla in Base.metadata.tables.items():
         if nombre not in sin_estudio:
             assert "estudio_id" in tabla.c, nombre
