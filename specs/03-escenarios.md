@@ -114,3 +114,29 @@ Cada escenario es una conversación de prueba. Sirven a la vez de criterio de ac
 **E-DEMO-04: un visitante admin no ve ni contacta a otros** (RF-DEMO-006)
 - El visitante A se da de alta. El visitante B escribe `DEMO ADMIN` y abre los clientes inactivos, `responder <tel de A> hola` y una campaña.
 - Resultado esperado: B ve el teléfono de A enmascarado, A no recibe nada y B no recibe el aviso del alta de A.
+
+## Panel web (propuesta)
+
+**E-PAN-01: entrar con código** (RF-PAN-001, RNF-SEG-004)
+- La admin escribe su teléfono en `/panel/entrar`, recibe un código por WhatsApp y lo introduce.
+- Resultado esperado: entra en la agenda. Con un código caducado, o tras 5 intentos fallidos, no entra y tiene que pedir otro.
+
+**E-PAN-02: un número que no es de staff** (RF-PAN-001)
+- Una clienta escribe su teléfono en `/panel/entrar`.
+- Resultado esperado: ve la misma pantalla que el staff, pero no recibe ningún código ni se crea ninguna fila en `codigos_acceso`.
+
+**E-PAN-03: la instructora solo ve lo suyo** (RF-PAN-002, RF-PAN-010)
+- Laura (instructora) entra en el panel y luego abre a mano `/panel/caja` y `/panel/clases/<id de una clase de Carlos>`.
+- Resultado esperado: la agenda solo muestra sus clases, y las dos URLs responden 403 sin enseñar datos.
+
+**E-PAN-04: pasar lista** (RF-PAN-003)
+- Laura abre su clase de hoy y marca a Marta como asistida y a Pedro como falta.
+- Resultado esperado: las reservas pasan a `asistio` y `falta`, y queda el evento en `eventos_agente` con `agente = "panel"`.
+
+**E-PAN-05: pago en efectivo desde el panel en el plan Básico** (RF-PAN-006, RF-BAS-007)
+- La admin registra 85 € en efectivo de Marta por el Bono 5 sesiones.
+- Resultado esperado: se crea una acción pendiente y la pantalla pide confirmar. Solo al pulsar *Confirmar* se crean el pago y el bono activo. Si pasan 15 minutos, la acción caduca y no se crea nada.
+
+**E-PAN-06: contestar una conversación derivada** (RF-PAN-008)
+- Marta ha hecho una consulta médica y su conversación está en modo humano. La admin le contesta desde el panel y después pulsa *Devolver al bot*.
+- Resultado esperado: Marta recibe el mensaje por WhatsApp, se guarda en su historial y la conversación vuelve a `estado = bot`.
